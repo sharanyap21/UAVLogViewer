@@ -48,9 +48,7 @@
             class="chat-float-btn"
             v-if="!floatingBotVisible"
             @click="floatingBotVisible = true"
-            :style="{ backgroundImage: `url(${arenaLogo})` }"
-        >
-        </button>
+        ><i class="fa fa-question" aria-hidden="true"></i></button>
         <ChatBot
             v-if="floatingBotVisible"
             floating

@@ -148,7 +148,7 @@ export default {
 
 .chat-message.bot .message-bubble {
     background: #e9e9eb;
-    color: #2c3e50;
+    color: #0d1217;
     border-bottom-left-radius: 4px;
 }
 
