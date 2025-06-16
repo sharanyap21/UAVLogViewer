@@ -1,28 +1,22 @@
 <template>
     <div :class="['chatbot-container', { floating }]">
         <div class="chat-header">
-        <h4>MAVLink Assistant</h4>
-        <button class="close-btn" @click="close()"><i class="fa fa-times-circle" aria-hidden="true"></i></button>
+            <button class="close-btn" @click="close()">
+                <i class="fa fa-times" aria-hidden="true"></i>
+            </button>
         </div>
+
         <div class="chat-window">
-        <div
-            v-for="(msg, index) in messages"
-            :key="index"
-            class="chat-message"
-            :class="msg.role"
-        >
-            <strong>{{ msg.role === 'user' ? 'You' : 'Bot' }}:</strong>
-            <span>{{ msg.text }}</span>
+            <div v-for="(msg, index) in messages" :key="index" class="chat-message" :class="msg.role">
+                <span class="message-bubble">{{ msg.text }}</span>
+            </div>
         </div>
-        </div>
-        <form @submit.prevent="sendMessage" class="chat-input">
-        <input
-            v-model="newMessage"
-            type="text"
-            placeholder="Ask a question..."
-            required
-        />
-        <button type="submit">Send</button>
+
+        <form @submit.prevent="sendMessage" class="chat-input-form">
+            <input v-model="newMessage" type="text" placeholder="Ask anything..." required />
+            <button type="submit" class="send-btn">
+                <i class="fa fa-arrow-up" aria-hidden="true"></i>
+            </button>
         </form>
     </div>
 </template>
@@ -55,103 +49,161 @@ export default {
 
             // Fake bot reply for demo purposes
             setTimeout(() => {
-                this.messages.push({ role: 'bot', text: 'This is a placeholder reply.' })
+                this.messages.push({
+                    role: 'bot',
+                    text: 'This is a colorful placeholder reply!'
+                })
             }, 500)
         }
     },
     mounted () {
-        console.log('✅ ChatBot component mounted')
-        this.messages.push({ role: 'bot', text: 'Hello! How can I help you today?' })
+        this.messages.push({ role: 'bot', text: 'What can I help with?' })
     }
 }
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
 .chatbot-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 300px;
-  height: 400px;
-  margin: 0;
-  padding: 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
+    font-family: 'Inter', sans-serif;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    height: 550px;
+    background: #f4f6f8;
+    border-radius: 24px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
 }
 
 .chat-header {
-  padding: 0.75rem;
-  background: #409eff;
-  color: white;
-  border-radius: 8px 8px 0 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.chat-header h4 {
-  margin: 0;
-  font-size: 1rem;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0;
+    background: #dcdcdc;
+    color: #555;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background: #c9c9c9;
 }
 
 .chat-window {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-  background: #f8f8f8;
+    flex: 1;
+    padding: 20px 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 40px;
+}
+
+.chat-window::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-window::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.chat-window::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
 }
 
 .chat-message {
-  margin-bottom: 0.75rem;
-  max-width: 80%;
+    display: flex;
+    max-width: 85%;
 }
 
-.chat-message.user {
-  text-align: right;
-  color: #333;
-  margin-left: auto;
+.message-bubble {
+    padding: 10px 16px;
+    border-radius: 20px;
+    line-height: 1.5;
+    word-wrap: break-word;
 }
 
 .chat-message.bot {
-  text-align: left;
-  color: #2c3e50;
-  margin-right: auto;
+    align-self: flex-start;
 }
 
-.chat-input {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: white;
-  border-top: 1px solid #eee;
+.chat-message.bot .message-bubble {
+    background: #e9e9eb;
+    color: #2c3e50;
+    border-bottom-left-radius: 4px;
 }
 
-.chat-input input {
-  flex: 1;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+.chat-message.user {
+    align-self: flex-end;
 }
 
-.chat-input button {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: #409eff;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
+.chat-message.user .message-bubble {
+    background: #2c3e50;
+    color: #e9e9eb;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-input-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: #ffffff;
+    border-top: 1px solid #e0e0e0;
+}
+
+.chat-input-form input {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 20px;
+    border: 1px solid #dcdcdc;
+    background-color: #f4f4f4;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chat-input-form input:focus {
+    outline: none;
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.send-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: #333;
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: background-color 0.2s;
+}
+
+.send-btn:hover {
+    background: #000;
 }
 </style>
