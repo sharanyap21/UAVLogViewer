@@ -282,9 +282,7 @@ export default {
 }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-
     .nav-side-menu ul :not(collapsed) .arrow:before,
     .nav-side-menu li :not(collapsed) .arrow:before {
         font-family: 'Montserrat', sans-serif;
@@ -337,9 +335,8 @@ export default {
         opacity: 0.75;
         text-align: center;
     }
-    /* ATOM SPINNER */
 
-      div .atom-spinner {
+    div .atom-spinner {
         margin: auto;
         margin-top: 15%;
     }
@@ -370,35 +367,37 @@ export default {
     #vuewrapper {
         height: 100%;
         overflow: hidden;
-        /* Floating layout styles */
         display: flex;
-        gap: 20px;
-        padding: 20px;
         box-sizing: border-box;
         background: #4A4E54;
     }
 
     .floating-sidebar {
+        position: relative;
+        z-index: 10;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
         flex: 0 0 25%;
         min-width: 280px;
         max-width: 400px;
-        background: #2C2F33;
-        border-radius: 15px;
+        background: #20212D !important;
+        border-radius: 0px 15px 15px 0px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
     }
 
     .floating-main {
+        margin-left: -40px;
+        padding-left: 40px;
         flex: 1;
-        background-color: #6B6E73;
-        border-radius: 15px;
+        background-color: #565760;
         display: flex;
         flex-direction: column;
         overflow: hidden;
     }
 
 </style>
+
 <style>
 a {
     color: #ffffff !important;

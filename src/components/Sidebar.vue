@@ -12,9 +12,6 @@
         <b-collapse class="menu-content collapse out" id="menucontent" visible>
             <span v-if="state.file" class="filename">Current file: {{state.file}}</span>
             <div class="tabholder">
-                <!-- Home -->
-                <a :class="selected === 'home' ? 'selected' : ''" @click="selected='home'" v-if="!state.processDone">
-                <i class="fas fa-home"></i>Home</a>
                 <!-- Plot -->
                 <a :class="selected === 'plot' ? 'selected' : ''" @click="selected='plot'"
                    v-if="state.processDone"> <i class="fas fa-chart-line"></i>Plot</a>
@@ -34,8 +31,8 @@
                 </div>
                 <div v-if="selected==='home'">
                     <Dropzone/>
-                    <span class="buildinfo">Commit {{state.commit}}</span>
-                    <span class="buildinfo">Built {{state.buildDate}}</span>
+                    <!-- <span class="buildinfo">Commit {{state.commit}}</span>
+                    <span class="buildinfo">Built {{state.buildDate}}</span> -->
                 </div>
                 <div v-if="selected==='other'">
                     <!-- PARAM/MESSAGES/RADIO -->
@@ -234,7 +231,7 @@ export default {
 
 @media (min-width: 575px) and (max-width: 992px) {
        a {
-        padding: 2px 60px 2px 55px !important;
+        padding: 2px 60px 2px 55px;
        }
     }
 </style>
@@ -264,8 +261,8 @@ a.centered-section {
     .nav-side-menu {
         overflow-x: hidden;
         padding: 0;
-        background-color: rgb(29, 36, 52);
-        background: linear-gradient(0deg, rgb(20, 25, 36) 51%, rgb(37, 47, 71) 100%);
+        /* background-color: rgb(29, 36, 52); */
+        /* background: linear-gradient(0deg, rgb(20, 25, 36) 51%, rgb(37, 47, 71) 100%); */
         position: absolute;
         top: 0px;
         height: 100%;
@@ -406,14 +403,13 @@ a.centered-section {
         padding-left: 0px;
         line-height: 50px;
         margin-bottom: 0;
-        color: rgb(54, 72, 114) !important;
-        background-color: rgba(248, 248, 248, 0.918);
+        color: white;
         display: block;
     }
 
     .brand a {
         text-decoration: none;
-        color: rgb(54, 72, 114) !important;
+        color: rgb(54, 72, 114);
     }
 
     .github img {

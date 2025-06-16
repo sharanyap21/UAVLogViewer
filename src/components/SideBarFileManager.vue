@@ -1,7 +1,7 @@
 <template>
     <div>
         <li  v-if="file==null && !sampleLoaded" >
-            <a @click="onLoadSample('sample')" class="section"><i class="fas fa-play"></i>  Open Sample </a>
+            <a @click="onLoadSample('sample')" class="section" id="open-sample">Play Sample</a>
         </li>
         <li v-if="url">
             <a @click="share" class="section"><i class="fas fa-share-alt"></i> {{ shared ? 'Copied to clipboard!' :
@@ -12,7 +12,8 @@
         </li>
         <div @click="browse" @dragover.prevent @drop="onDrop" id="drop_zone"
         v-if="file==null && uploadpercentage===-1  && !sampleLoaded">
-            <p>Drop *.tlog or *.bin file here or click to browse</p>
+            <i id="plus-icon" class="fa fa-plus"></i>
+            <p>Upload a .tlog or .bin file</p>
             <input @change="onChange" id="choosefile" style="opacity: 0;" type="file">
         </div>
         <!--<b-form-checkbox @change="uploadFile()" class="uploadCheckbox" v-if="file!=null && !uploadStarted"> Upload
@@ -275,15 +276,20 @@ export default {
     /* NAVBAR */
 
     #drop_zone {
-        padding-top: 25px;
-        padding-left: 10px;
-        border: 2px dashed #434b52da;
-        width: auto;
-        height: 100px;
-        margin: 20px;
-        border-radius: 5px;
-        cursor: default;
-        background-color: rgba(0, 0, 0, 0);
+        gap: 10px;
+        background-color: #32343F;
+        color: #7A7B82;
+        font-size: 14px;
+        font-family: 'SF Pro Text', 'San Francisco', 'Segoe UI', 'Arial', 'sans-serif';
+        border-radius: 15px;
+        padding: 3px 5px;
+        height: 40px;
+        cursor: pointer;
+        position: absolute;
+        left: 13px;
+        right: 13px;
+        bottom: 13px;
+        box-sizing: border-box;
     }
 
     #drop_zone:hover {
@@ -292,6 +298,16 @@ export default {
 
     .uploadCheckbox {
         margin-left: 20px;
+    }
+
+    #plus-icon {
+        font-size: 1.2em;
+        margin-right: 15px;
+    }
+
+    #drop_zone p {
+        margin: 0;
+        display: inline;
     }
 
 </style>
