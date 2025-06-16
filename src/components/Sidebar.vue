@@ -229,6 +229,7 @@ export default {
     components: {PlotSetup, MessageMenu, Dropzone, ChatBot}
 }
 </script>
+
 <style scoped>
 
 @media (min-width: 575px) and (max-width: 992px) {
@@ -265,7 +266,7 @@ a.centered-section {
         padding: 0;
         background-color: rgb(29, 36, 52);
         background: linear-gradient(0deg, rgb(20, 25, 36) 51%, rgb(37, 47, 71) 100%);
-        position: fixed !important;
+        position: absolute;
         top: 0px;
         height: 100%;
         color: rgb(255, 255, 255);

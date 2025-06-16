@@ -117,7 +117,7 @@ export default {
     margin-top: 40px;
 }
 
-/* .chat-window::-webkit-scrollbar {
+.chat-window::-webkit-scrollbar {
     width: 6px;
 }
 
@@ -128,7 +128,7 @@ export default {
 
 .chat-window::-webkit-scrollbar-thumb:hover {
     background: #bbb;
-} */
+}
 
 .chat-message {
     display: flex;

@@ -1,6 +1,6 @@
 <template>
     <div class="home-wrapper">
-        <div id='vuewrapper' style="height: 100%;">
+        <div id='vuewrapper'>
             <template v-if="state.mapLoading || state.plotLoading">
                 <div id="waiting">
                     <atom-spinner
@@ -19,28 +19,24 @@
             <EkfHelperTool  @close="state.showEkfHelper = false" v-if="state.showEkfHelper"></EkfHelperTool>
             <ChatBot        @close="state.showChatBot = false" v-if="state.showChatBot"></ChatBot>
 
-            <div class="container-fluid" style="height: 100%; overflow: hidden;">
+            <sidebar class="floating-sidebar" />
 
-                <sidebar/>
+            <main class="floating-main" role="main">
 
-                <main class="col-md-9 ml-sm-auto col-lg-10 flex-column d-sm-flex" role="main">
-
-                    <div class="row"
-                        v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
-                        v-if="state.plotOn">
-                        <div class="col-12">
-                            <Plotly/>
-                        </div>
+                <div class="row"
+                    v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
+                    v-if="state.plotOn">
+                    <div class="col-12">
+                        <Plotly/>
                     </div>
-                    <div class="row" v-bind:class="[state.plotOn ? 'h-50' : 'h-100']"
-                        v-if="state.mapAvailable && mapOk && state.showMap">
-                        <div class="col-12 noPadding">
-                            <CesiumViewer ref="cesiumViewer"/>
-                        </div>
+                </div>
+                <div class="row" v-bind:class="[state.plotOn ? 'h-50' : 'h-100']"
+                    v-if="state.mapAvailable && mapOk && state.showMap">
+                    <div class="col-12 noPadding">
+                        <CesiumViewer ref="cesiumViewer"/>
                     </div>
-                </main>
-
-            </div>
+                </div>
+            </main>
         </div>
 
         <!-- Floating chatbot -->
@@ -373,6 +369,32 @@ export default {
 
     #vuewrapper {
         height: 100%;
+        overflow: hidden;
+        /* Floating layout styles */
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+        box-sizing: border-box;
+        background: #4A4E54;
+    }
+
+    .floating-sidebar {
+        flex: 0 0 25%;
+        min-width: 280px;
+        max-width: 400px;
+        background: #2C2F33;
+        border-radius: 15px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .floating-main {
+        flex: 1;
+        background-color: #6B6E73;
+        border-radius: 15px;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
     }
 
