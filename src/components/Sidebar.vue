@@ -100,6 +100,12 @@
                             <input type="checkbox" v-model="state.showDeviceIDs">
                             <a class="check-font">  Sensors </a>
                         </label>
+                        <!-- Location A -->
+                        <label>
+                            <i class="fa fa-robot circle"></i>
+                            <input type="checkbox" v-model="state.showChatBot">
+                            <a class="check-font"> Assistant </a>
+                        </label>
                     </div>
                     <div v-if="state.files" class="show-hide">
                         <ul class="files-list">
@@ -133,6 +139,7 @@ import Dropzone from './SideBarFileManager.vue'
 import MessageMenu from './SideBarMessageMenu.vue'
 import {store} from './Globals.js'
 import PlotSetup from './PlotSetup.vue'
+import ChatBot from './ChatBot.vue'
 
 export default {
     name: 'sidebar',
@@ -225,7 +232,7 @@ export default {
             this.downloadURL = URL.createObjectURL(this.blob)
         }
     },
-    components: {PlotSetup, MessageMenu, Dropzone}
+    components: {PlotSetup, MessageMenu, Dropzone, ChatBot}
 }
 </script>
 <style scoped>

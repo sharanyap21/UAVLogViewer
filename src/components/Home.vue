@@ -1,43 +1,61 @@
 <template>
-    <div id='vuewrapper' style="height: 100%;">
-        <template v-if="state.mapLoading || state.plotLoading">
-            <div id="waiting">
-                <atom-spinner
-                    :animation-duration="1000"
-                    :color="'#64e9ff'"
-                    :size="300"
-                />
+    <div class="home-wrapper">
+        <div id='vuewrapper' style="height: 100%;">
+            <template v-if="state.mapLoading || state.plotLoading">
+                <div id="waiting">
+                    <atom-spinner
+                        :animation-duration="1000"
+                        :color="'#64e9ff'"
+                        :size="300"
+                    />
+                </div>
+            </template>
+            <TxInputs fixed-aspect-ratio v-if="state.mapAvailable && state.showMap && state.showRadio"></TxInputs>
+            <ParamViewer    @close="state.showParams = false" v-if="state.showParams"></ParamViewer>
+            <MessageViewer  @close="state.showMessages = false" v-if="state.showMessages"></MessageViewer>
+            <DeviceIDViewer @close="state.showDeviceIDs = false" v-if="state.showDeviceIDs"></DeviceIDViewer>
+            <AttitudeViewer @close="state.showAttitude = false" v-if="state.showAttitude"></AttitudeViewer>
+            <MagFitTool     @close="state.showMagfit = false" v-if="state.showMagfit"></MagFitTool>
+            <EkfHelperTool  @close="state.showEkfHelper = false" v-if="state.showEkfHelper"></EkfHelperTool>
+            <ChatBot        @close="state.showChatBot = false" v-if="state.showChatBot"></ChatBot>
+
+            <div class="container-fluid" style="height: 100%; overflow: hidden;">
+
+                <sidebar/>
+
+                <main class="col-md-9 ml-sm-auto col-lg-10 flex-column d-sm-flex" role="main">
+
+                    <div class="row"
+                        v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
+                        v-if="state.plotOn">
+                        <div class="col-12">
+                            <Plotly/>
+                        </div>
+                    </div>
+                    <div class="row" v-bind:class="[state.plotOn ? 'h-50' : 'h-100']"
+                        v-if="state.mapAvailable && mapOk && state.showMap">
+                        <div class="col-12 noPadding">
+                            <CesiumViewer ref="cesiumViewer"/>
+                        </div>
+                    </div>
+                </main>
+
             </div>
-        </template>
-        <TxInputs fixed-aspect-ratio v-if="state.mapAvailable && state.showMap && state.showRadio"></TxInputs>
-        <ParamViewer    @close="state.showParams = false" v-if="state.showParams"></ParamViewer>
-        <MessageViewer  @close="state.showMessages = false" v-if="state.showMessages"></MessageViewer>
-        <DeviceIDViewer @close="state.showDeviceIDs = false" v-if="state.showDeviceIDs"></DeviceIDViewer>
-        <AttitudeViewer @close="state.showAttitude = false" v-if="state.showAttitude"></AttitudeViewer>
-        <MagFitTool     @close="state.showMagfit = false" v-if="state.showMagfit"></MagFitTool>
-        <EkfHelperTool  @close="state.showEkfHelper = false" v-if="state.showEkfHelper"></EkfHelperTool>
-        <div class="container-fluid" style="height: 100%; overflow: hidden;">
-
-            <sidebar/>
-
-            <main class="col-md-9 ml-sm-auto col-lg-10 flex-column d-sm-flex" role="main">
-
-                <div class="row"
-                     v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
-                     v-if="state.plotOn">
-                    <div class="col-12">
-                        <Plotly/>
-                    </div>
-                </div>
-                <div class="row" v-bind:class="[state.plotOn ? 'h-50' : 'h-100']"
-                     v-if="state.mapAvailable && mapOk && state.showMap">
-                    <div class="col-12 noPadding">
-                        <CesiumViewer ref="cesiumViewer"/>
-                    </div>
-                </div>
-            </main>
-
         </div>
+
+        <!-- Floating chatbot -->
+        <button
+            class="chat-float-btn"
+            v-if="!floatingBotVisible"
+            @click="floatingBotVisible = true"
+            :style="{ backgroundImage: `url(${arenaLogo})` }"
+        >
+        </button>
+        <ChatBot
+            v-if="floatingBotVisible"
+            floating
+            @close="floatingBotVisible = false"
+        />
     </div>
 </template>
 
@@ -60,7 +78,9 @@ import { MavlinkDataExtractor } from '../tools/mavlinkDataExtractor'
 import { DjiDataExtractor } from '../tools/djiDataExtractor'
 import MagFitTool from '@/components/widgets/MagFitTool.vue'
 import EkfHelperTool from '@/components/widgets/EkfHelperTool.vue'
+import ChatBot from '@/components/ChatBot.vue'
 import Vue from 'vue'
+import arenaLogo from '@/assets/arena_ai_logo.jpeg'
 
 export default {
     name: 'Home',
@@ -78,7 +98,9 @@ export default {
     data () {
         return {
             state: store,
-            dataExtractor: null
+            dataExtractor: null,
+            floatingBotVisible: false,
+            arenaLogo
         }
     },
     methods: {
@@ -239,7 +261,8 @@ export default {
         DeviceIDViewer,
         AttitudeViewer,
         MagFitTool,
-        EkfHelperTool
+        EkfHelperTool,
+        ChatBot
     },
     computed: {
         mapOk () {
@@ -325,6 +348,22 @@ export default {
       div .atom-spinner {
         margin: auto;
         margin-top: 15%;
+    }
+
+    .chat-float-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        z-index: 9998;
     }
 
 </style>
