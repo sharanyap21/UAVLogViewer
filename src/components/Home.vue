@@ -22,7 +22,6 @@
             <sidebar class="floating-sidebar" />
 
             <main class="floating-main" role="main">
-
                 <div class="row"
                     v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
                     v-if="state.plotOn">
@@ -355,6 +354,8 @@ export default {
         cursor: pointer;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         z-index: 9998;
+        background-color: rgb(152, 151, 151);
+        color: rgb(210, 210, 210);
     }
 
     .home-wrapper {
@@ -375,12 +376,12 @@ export default {
     .floating-sidebar {
         position: relative;
         z-index: 10;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 5px 20px #00000084;
         flex: 0 0 25%;
         min-width: 280px;
         max-width: 400px;
         background: #20212D !important;
-        border-radius: 0px 15px 15px 0px;
+        border-radius: 0px 13px 13px 0px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -390,12 +391,11 @@ export default {
         margin-left: -40px;
         padding-left: 40px;
         flex: 1;
-        background-color: #565760;
+        background-color: #31323D;
         display: flex;
         flex-direction: column;
         overflow: hidden;
     }
-
 </style>
 
 <style>

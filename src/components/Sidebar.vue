@@ -3,10 +3,12 @@
     <div class="nav-side-menu col-lg-2">
 
         <h1 class="brand">
-            <a class="github" href="https://github.com/ardupilot/uavlogviewer">
+            <!-- <a class="github" href="https://github.com/ardupilot/uavlogviewer">
             <img :src="require('../assets/GitHub-Mark-64px.png').default"/>
-            </a>
-            <a href="/"><b>UAV</b> Log Viewer<i class="fas fa-plane"></i></a><a class="github" href="https://ardupilot.org/copter/docs/common-uavlogviewer.html"><img :src="require('../assets/wiki.svg').default"/></a></h1>
+            </a> -->
+            <!-- <a href="/">UAV Log Viewer</a> -->
+            <!-- <a class="github" href="https://ardupilot.org/copter/docs/common-uavlogviewer.html"><img :src="require('../assets/wiki.svg').default"/></a> -->
+        </h1>
         <!-- TABHOLDER -->
         <i class="fa fa-bars fa-2x toggle-btn" v-b-toggle.menucontent></i>
         <b-collapse class="menu-content collapse out" id="menucontent" visible>
@@ -261,8 +263,6 @@ a.centered-section {
     .nav-side-menu {
         overflow-x: hidden;
         padding: 0;
-        /* background-color: rgb(29, 36, 52); */
-        /* background: linear-gradient(0deg, rgb(20, 25, 36) 51%, rgb(37, 47, 71) 100%); */
         position: absolute;
         top: 0px;
         height: 100%;
@@ -398,9 +398,9 @@ a.centered-section {
     }
 
     .brand {
-        text-align: center;
-        font-size: 22px;
-        padding-left: 0px;
+        text-align: left;
+        font-size: 18px;
+        padding-left: 15px;
         line-height: 50px;
         margin-bottom: 0;
         color: white;
