@@ -1,8 +1,8 @@
 <template>
     <div>
-        <li  v-if="file==null && !sampleLoaded" >
+        <!-- <li  v-if="file==null && !sampleLoaded" >
             <a @click="onLoadSample('sample')" class="section" id="open-sample">Play Sample</a>
-        </li>
+        </li> -->
         <li v-if="url">
             <a @click="share" class="section"><i class="fas fa-share-alt"></i> {{ shared ? 'Copied to clipboard!' :
                 'Share link'}}</a>
@@ -10,11 +10,21 @@
         <li v-if="url">
             <a :href="'/uploaded/' + url" class="section" target="_blank"><i class="fas fa-download"></i> Download</a>
         </li>
-        <div @click="browse" @dragover.prevent @drop="onDrop" id="drop_zone"
-        v-if="file==null && uploadpercentage===-1  && !sampleLoaded">
-            <i id="plus-icon" class="fa fa-plus"></i>
-            <p>Upload a .tlog or .bin file</p>
-            <input @change="onChange" id="choosefile" style="opacity: 0;" type="file">
+        <div class="sidebar-bottom-bar">
+            <div @click="browse" @dragover.prevent @drop="onDrop" id="drop_zone"
+                v-if="file==null && uploadpercentage===-1  && !sampleLoaded">
+                <i id="plus-icon" class="fa fa-plus"></i>
+                <p class="upload-text">Upload a test file</p>
+                <input @change="onChange" id="choosefile" style="opacity: 0;" type="file">
+            </div>
+            <button
+                class="sample-help-btn"
+                type="button"
+                @click.stop="onLoadSample('sample')"
+                title="Try a sample file"
+            >
+                <img class="help-icon-img" :src="infoCircleSvg" alt="info" />
+            </button>
         </div>
         <!--<b-form-checkbox @change="uploadFile()" class="uploadCheckbox" v-if="file!=null && !uploadStarted"> Upload
         </b-form-checkbox>-->
@@ -32,6 +42,7 @@
 import VProgress from './SideBarFileManagerProgressBar.vue'
 import Worker from '../tools/parsers/parser.worker.js'
 import { store } from './Globals'
+import infoCircleSvg from '../assets/info.circle.svg'
 
 import { MAVLink20Processor as MAVLink } from '../libs/mavlink'
 
@@ -53,7 +64,8 @@ export default {
             transferMessage: '',
             state: store,
             file: null,
-            uploadStarted: false
+            uploadStarted: false,
+            infoCircleSvg
         }
     },
     created () {
@@ -272,42 +284,78 @@ export default {
 }
 </script>
 <style scoped>
-
-    /* NAVBAR */
-
-    #drop_zone {
-        gap: 10px;
-        background-color: #32343F;
-        color: #7A7B82;
-        font-size: 14px;
-        font-family: 'SF Pro Text', 'San Francisco', 'Segoe UI', 'Arial', 'sans-serif';
-        border-radius: 15px;
-        padding: 3px 5px;
-        height: 40px;
-        cursor: pointer;
-        position: absolute;
-        left: 13px;
-        right: 13px;
-        bottom: 13px;
-        box-sizing: border-box;
-    }
-
-    #drop_zone:hover {
-        background-color: #171e2450;
-    }
-
-    .uploadCheckbox {
-        margin-left: 20px;
-    }
-
-    #plus-icon {
-        font-size: 1.2em;
-        margin-right: 15px;
-    }
-
-    #drop_zone p {
-        margin: 0;
-        display: inline;
-    }
-
+.sidebar-bottom-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 13px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    z-index: 10;
+    min-width: 260px;
+}
+#drop_zone {
+    background-color: #32343F;
+    color: #7A7B82;
+    font-size: 14px;
+    font-family: 'SF Pro Text', 'San Francisco', 'Segoe UI', 'Arial', 'sans-serif';
+    border-radius: 15px;
+    padding: 3px 5px;
+    height: 40px;
+    width: 225px;
+    cursor: pointer;
+    box-sizing: border-box;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+    position: static;
+}
+#plus-icon,
+.upload-text {
+    display: inline-block;
+    vertical-align: middle;
+}
+#plus-icon {
+    font-size: 1.2em;
+    margin-right: 15px;
+}
+.upload-text {
+    margin: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+.sample-help-btn {
+    background: none;
+    border: none;
+    color: #7A7B82;
+    font-size: 1.2em;
+    margin-left: 8px;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 50%;
+    transition: background 0.2s;
+    display: inline-block;
+    vertical-align: middle;
+    height: 40px;
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    line-height: 40px;
+    text-align: center;
+    position: relative;
+}
+.sample-help-btn:hover {
+    background: #23253a;
+}
+.sample-help-btn img {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+    pointer-events: none;
+}
 </style>
