@@ -15,7 +15,8 @@
                 v-if="file==null && uploadpercentage===-1  && !sampleLoaded">
                 <i id="plus-icon" class="fa fa-plus"></i>
                 <p class="upload-text">Upload a test file</p>
-                <input @change="onChange" id="choosefile" style="opacity: 0;" type="file">
+                <input @change="onChange" id="choosefile" style="opacity: 0; pointer-events: none;"
+                type="file" accept=".tlog,.bin">
             </div>
             <button
                 class="sample-help-btn"
@@ -28,18 +29,11 @@
         </div>
         <!--<b-form-checkbox @change="uploadFile()" class="uploadCheckbox" v-if="file!=null && !uploadStarted"> Upload
         </b-form-checkbox>-->
-        <VProgress v-bind:complete="transferMessage"
-                   v-bind:percent="uploadpercentage"
-                   v-if="uploadpercentage > -1">
-        </VProgress>
-        <VProgress v-bind:complete="state.processStatus"
-                   v-bind:percent="state.processPercentage"
-                   v-if="state.processPercentage > -1"
-        ></VProgress>
+        <!-- Progress bars removed as requested -->
     </div>
 </template>
 <script>
-import VProgress from './SideBarFileManagerProgressBar.vue'
+// import VProgress from './SideBarFileManagerProgressBar.vue'
 import Worker from '../tools/parsers/parser.worker.js'
 import { store } from './Globals'
 import infoCircleSvg from '../assets/info.circle.svg'
@@ -131,7 +125,13 @@ export default {
         },
         onChange (ev) {
             const fileinput = document.getElementById('choosefile')
-            this.process(fileinput.files[0])
+            const file = fileinput.files[0]
+            if (file && !file.name.match(/\.(tlog|bin)$/i)) {
+                alert('Only .tlog and .bin files are allowed!')
+                fileinput.value = ''
+                return
+            }
+            this.process(file)
         },
         onDrop (ev) {
             // Prevent default behavior (Prevent file from being opened)
@@ -279,7 +279,7 @@ export default {
         }
     },
     components: {
-        VProgress
+        // VProgress
     }
 }
 </script>

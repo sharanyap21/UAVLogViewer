@@ -1554,8 +1554,8 @@ export default {
     }
 
     #toolbar {
-        margin: 5px;
-        padding: 5px 5px;
+        margin: 10px;
+        padding: 5px 10px;
         position: absolute;
         top: 0;
         color: #eee;
@@ -1617,7 +1617,7 @@ export default {
     .demo-container input {
         vertical-align: middle;
         margin-top: 0;
-        margin-right: 5px;
+        margin-right: 10px;
     }
 
     .demo-container div {
@@ -1690,6 +1690,7 @@ export default {
     .cesium-toolbar-button {
         background-color: rgb(61, 58, 56);
         border-radius: 3px;
+        margin: 5px;
     }
 
     .cesium-toolbar-button:hover {

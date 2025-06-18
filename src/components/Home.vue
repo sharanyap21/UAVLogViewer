@@ -1,6 +1,7 @@
 <template>
     <div class="home-wrapper">
         <div id='vuewrapper'>
+            <!-- SPINNER -->
             <template v-if="state.mapLoading || state.plotLoading">
                 <div id="waiting">
                     <atom-spinner
@@ -10,6 +11,35 @@
                     />
                 </div>
             </template>
+
+            <!-- DATA VIEW (Sidebar + Main Content) -->
+            <div v-if="state.file" class="data-view-wrapper">
+                <sidebar class="floating-sidebar" />
+
+                <main class="floating-main" role="main">
+                    <div class="row"
+                        v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
+                        v-if="state.plotOn">
+                        <div class="col-12">
+                            <Plotly/>
+                        </div>
+                    </div>
+                    <div class="row" v-bind:class="[state.plotOn ? 'h-50' : 'h-100']"
+                        v-if="state.mapAvailable && mapOk && state.showMap">
+                        <div class="col-12 noPadding">
+                            <CesiumViewer ref="cesiumViewer"/>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <!-- INITIAL HOME SCREEN (Logo + Upload) -->
+            <div v-else class="home-initial-screen">
+                <img :src="arenaLogo" alt="Arena Logo" class="arena-logo-img" />
+                <Dropzone />
+            </div>
+
+            <!-- FLOATING WIDGETS (remain on top) -->
             <TxInputs fixed-aspect-ratio v-if="state.mapAvailable && state.showMap && state.showRadio"></TxInputs>
             <ParamViewer    @close="state.showParams = false" v-if="state.showParams"></ParamViewer>
             <MessageViewer  @close="state.showMessages = false" v-if="state.showMessages"></MessageViewer>
@@ -17,28 +47,9 @@
             <AttitudeViewer @close="state.showAttitude = false" v-if="state.showAttitude"></AttitudeViewer>
             <MagFitTool     @close="state.showMagfit = false" v-if="state.showMagfit"></MagFitTool>
             <EkfHelperTool  @close="state.showEkfHelper = false" v-if="state.showEkfHelper"></EkfHelperTool>
-            <ChatBot        @close="state.showChatBot = false" v-if="state.showChatBot"></ChatBot>
-
-            <sidebar class="floating-sidebar" />
-
-            <main class="floating-main" role="main">
-                <div class="row"
-                    v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
-                    v-if="state.plotOn">
-                    <div class="col-12">
-                        <Plotly/>
-                    </div>
-                </div>
-                <div class="row" v-bind:class="[state.plotOn ? 'h-50' : 'h-100']"
-                    v-if="state.mapAvailable && mapOk && state.showMap">
-                    <div class="col-12 noPadding">
-                        <CesiumViewer ref="cesiumViewer"/>
-                    </div>
-                </div>
-            </main>
         </div>
 
-        <!-- Floating chatbot -->
+        <!-- Floating chatbot (no changes needed here) -->
         <button
             class="chat-float-btn"
             v-if="!floatingBotVisible"
@@ -57,6 +68,7 @@ import isOnline from 'is-online'
 import Plotly from '@/components/Plotly.vue'
 import CesiumViewer from '@/components/CesiumViewer.vue'
 import Sidebar from '@/components/Sidebar.vue'
+import Dropzone from '@/components/SideBarFileManager.vue'
 import TxInputs from '@/components/widgets/TxInputs.vue'
 import ParamViewer from '@/components/widgets/ParamViewer.vue'
 import MessageViewer from '@/components/widgets/MessageViewer.vue'
@@ -73,7 +85,9 @@ import MagFitTool from '@/components/widgets/MagFitTool.vue'
 import EkfHelperTool from '@/components/widgets/EkfHelperTool.vue'
 import ChatBot from '@/components/ChatBot.vue'
 import Vue from 'vue'
-import arenaLogo from '@/assets/arena_ai_logo.jpeg'
+
+// --- THIS IS THE LINE TO CHANGE ---
+import arenaLogo from '@/assets/arena_logo.png'
 
 export default {
     name: 'Home',
@@ -211,10 +225,7 @@ export default {
 
             this.state.processStatus = 'Processed!'
             this.state.processDone = true
-            // Change to plot view after 2 seconds so the Processed status is readable
             setTimeout(() => { this.$eventHub.$emit('set-selected', 'plot') }, 2000)
-
-            // Only set showMap to true if it is available and was previously unavailable
             if (!this.state.mapAvailable) {
                 this.state.mapAvailable = this.state.currentTrajectory.length > 0
                 if (this.state.mapAvailable) {
@@ -230,16 +241,11 @@ export default {
                 format: 'rgbaString',
                 alpha: 1
             }
-            // colormap used on legend.
             this.state.cssColors = colormap(colorMapOptions)
-
-            // colormap used on Cesium
             colorMapOptions.format = 'float'
             this.state.colors = []
-            // this.translucentColors = []
             for (const rgba of colormap(colorMapOptions)) {
                 this.state.colors.push(new Color(rgba[0], rgba[1], rgba[2]))
-                // this.translucentColors.push(new Cesium.Color(rgba[0], rgba[1], rgba[2], 0.1))
             }
         }
     },
@@ -255,7 +261,8 @@ export default {
         AttitudeViewer,
         MagFitTool,
         EkfHelperTool,
-        ChatBot
+        ChatBot,
+        Dropzone
     },
     computed: {
         mapOk () {
@@ -281,6 +288,7 @@ export default {
 }
 </script>
 
+<!-- The <style> sections remain the same. -->
 <style scoped>
     .nav-side-menu ul :not(collapsed) .arrow:before,
     .nav-side-menu li :not(collapsed) .arrow:before {
@@ -368,9 +376,34 @@ export default {
     #vuewrapper {
         height: 100%;
         overflow: hidden;
-        display: flex;
+        display: block;
         box-sizing: border-box;
-        background: #4A4E54;
+        background: #31323D;
+    }
+
+    .data-view-wrapper {
+        display: flex;
+        height: 100%;
+        width: 100%;
+    }
+
+    .home-initial-screen {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .arena-logo-img {
+        opacity: 0.12;
+        max-width: 400px;
+        width: 30vw;
+        height: auto;
+        pointer-events: none;
+        margin-bottom: 20px;
     }
 
     .floating-sidebar {
@@ -381,7 +414,7 @@ export default {
         min-width: 280px;
         max-width: 400px;
         background: #20212D !important;
-        border-radius: 0px 13px 13px 0px;
+        border-radius: 0px 5px 5px 0px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -399,6 +432,30 @@ export default {
 </style>
 
 <style>
+.home-initial-screen .file-manager {
+    padding: 20px;
+    border: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+}
+.home-initial-screen .file-manager button {
+    background-color: #3e4049 !important;
+    border-radius: 30px !important;
+    padding: 10px 20px !important;
+    border: none !important;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.home-initial-screen .file-manager button:hover {
+    background-color: #4a4e54 !important;
+}
+.home-initial-screen .file-manager button i {
+    color: #e2e2e2 !important;
+    font-size: 14px;
+}
+
 a {
     color: #ffffff !important;
 }
