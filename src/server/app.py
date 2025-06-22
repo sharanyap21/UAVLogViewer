@@ -27,59 +27,86 @@ except Exception as e:
     print(f"Error configuring Google AI, please check your API key: {e}")
     model = None
 
+def get_telemetry_summary(data):
+    """
+    Creates a concise and accurate summary of the telemetry data from a
+    columnar data structure (a dictionary of lists).
+    """
+    if not isinstance(data, dict) or not data:
+        return "No telemetry data available."
+
+    # For debugging: shows the structure of the data received by this function.
+    # You can comment this out in production.
+    # print(data)
+
+    summary = "Available MAVLink message types:\n"
+    summary += ", ".join(data.keys())
+    summary += "\n\nKey Data Points (first 3 entries):\n"
+
+    # A more accurate list of important message types to look for.
+    # The function will only summarize the ones that exist in the log.
+    key_messages_to_summarize = [
+        'GLOBAL_POSITION_INT', 
+        'ATTITUDE', 
+        'HEARTBEAT', 
+        'STATUSTEXT'
+    ]
+
+    for msg_type in key_messages_to_summarize:
+        # Check if the message type exists in the data and is not empty
+        if msg_type not in data or not data[msg_type]:
+            continue
+
+        message_object = data[msg_type]
+        sample_data = []
+
+        if not isinstance(message_object, dict):
+            continue
+
+        try:
+            # Get the column/field names for this message type
+            inner_keys = list(message_object.keys())
+            if not inner_keys:
+                continue
+
+            # Find the number of data points (rows) from the length of the first column
+            num_messages = len(message_object[inner_keys[0]])
+            if num_messages == 0:
+                continue
+
+            # Reconstruct the first 3 "rows" of data from the columns
+            for i in range(min(3, num_messages)):
+                message_instance = {}
+                for key in inner_keys:
+                    # Defensively check if the column has this index
+                    if i < len(message_object[key]):
+                        message_instance[key] = message_object[key][i]
+                    else:
+                        message_instance[key] = None  # Use None if data is missing
+                sample_data.append(message_instance)
+
+            # Add the summary to the output string if we have sample data
+            if sample_data:
+                summary += f"- {msg_type}:\n{json.dumps(sample_data, indent=2)}\n"
+
+        except (IndexError, KeyError, TypeError) as e:
+            print(f"DEBUG: Could not process columnar data for {msg_type}: {e}")
+            summary += f"- {msg_type}: [Error processing sample data]\n"
+    
+    return summary
+
 def generate_prompt(telemetry_data, history, log_type):
     """
     Creates a detailed, agentic prompt for the LLM.
     """
-    def get_telemetry_summary(data):
-        """
-        Creates a concise summary of the telemetry data, correctly handling a
-        columnar data structure (a dictionary of lists).
-        """
-
-        print(data)
-        summary = "Available MAVLink message types:\n"
-        summary += ", ".join(data.keys())
-        summary += "\n\nKey Data Points (sample):\n"
-
-        key_messages = ['GPS', 'ATT', 'BAT', 'ERR', 'STAT', 'MODE']
-        for msg_type in key_messages:
-            # Check if the message type exists and its data is not empty
-            if msg_type in data and data[msg_type]:
-                message_object = data[msg_type]
-                sample_data = []  # Initialize an empty list for our samples
-
-                # This handles the columnar data structure (dictionary of lists)
-                if isinstance(message_object, dict):
-                    try:
-                        # Get the column names (e.g., 'TimeUS', 'Lat', 'Lng')
-                        inner_keys = list(message_object.keys())
-                        if not inner_keys: continue # Skip if the dictionary is empty
-
-                        # Find the length of the first column to determine num_messages
-                        num_messages = len(message_object[inner_keys[0]])
-
-                        # Reconstruct the first 3 "rows" from the columns
-                        for i in range(min(3, num_messages)):
-                            message_instance = {key: message_object[key][i] for key in inner_keys}
-                            sample_data.append(message_instance)
-
-                    except (IndexError, KeyError, TypeError) as e:
-                        # This handles cases where the data format is unexpected
-                        print(f"DEBUG: Could not process columnar data for {msg_type}: {e}")
-                        sample_data = [{"error": "Could not display sample data."}]
-                
-                # Fallback for the original assumption (list of dictionaries)
-                elif isinstance(message_object, list):
-                    sample_data = message_object[:3]
-
-                # Add the summary line if we successfully created a sample
-                if sample_data:
-                    summary += f"- {msg_type}: {json.dumps(sample_data, indent=2)}\n"
-
-        return summary
-
     telemetry_summary = get_telemetry_summary(telemetry_data)
+    
+    # # Save telemetry_summary to a file (out_actual.txt)
+    # with open('out_actual.txt', 'w') as f:
+    #     f.write(telemetry_summary)
+    # print("Saved telemetry_summary to out_actual.txt")
+
+    # Tell it to fix the get_telemetry_summary function to correctly capture the output
 
     # Build conversation history for context
     chat_history_text = ""
