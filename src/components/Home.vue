@@ -1,3 +1,4 @@
+<!-- home.vue -->
 <template>
     <div class="home-wrapper">
         <div id='vuewrapper'>
@@ -49,15 +50,16 @@
             <EkfHelperTool  @close="state.showEkfHelper = false" v-if="state.showEkfHelper"></EkfHelperTool>
         </div>
 
-        <!-- Floating chatbot (no changes needed here) -->
+        <!-- Floating chatbot -->
         <button
             class="chat-float-btn"
-            v-if="!floatingBotVisible"
+            v-if="state.file && !floatingBotVisible"
             @click="floatingBotVisible = true"
         ><i class="fa fa-question" aria-hidden="true"></i></button>
         <ChatBot
             v-if="floatingBotVisible"
             floating
+            :log-type="state.logType"
             @close="floatingBotVisible = false"
         />
     </div>
@@ -86,7 +88,6 @@ import EkfHelperTool from '@/components/widgets/EkfHelperTool.vue'
 import ChatBot from '@/components/ChatBot.vue'
 import Vue from 'vue'
 
-// --- THIS IS THE LINE TO CHANGE ---
 import arenaLogo from '@/assets/arena_logo.png'
 
 export default {
@@ -288,7 +289,7 @@ export default {
 }
 </script>
 
-<!-- The <style> sections remain the same. -->
+<!-- Styles are unchanged -->
 <style scoped>
     .nav-side-menu ul :not(collapsed) .arrow:before,
     .nav-side-menu li :not(collapsed) .arrow:before {
