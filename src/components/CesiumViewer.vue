@@ -1580,6 +1580,7 @@ export default {
     #wrapper {
         width: 100%;
         height: 100%;
+        margin-left: 0;
     }
 
     .mode {
@@ -1684,7 +1685,30 @@ export default {
 </style>
 
 <style>
-
+@media only screen and (min-width: 991px) and (max-width: 1439px) {
+    #wrapper {
+        margin-left: 27% !important;
+        width: 73% !important;
+    }
+}
+@media only screen and (min-width: 1440px) and (max-width: 2000px) {
+    #wrapper {
+        margin-left: 20% !important;
+        width: 80% !important;
+    }
+}
+@media only screen and (min-width: 2000px) {
+    #wrapper {
+        margin-left: 15% !important;
+        width: 85% !important;
+    }
+}
+@media only screen and (max-width: 992px) {
+    #wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
 /* TOOLBAR BUTTONS */
 
     .cesium-toolbar-button {
