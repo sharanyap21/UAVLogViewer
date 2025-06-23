@@ -1,7 +1,7 @@
 <template>
     <div class="home-wrapper">
         <div id='vuewrapper'>
-            <!-- SPINNER -->
+            <!-- Loading spinner overlay -->
             <template v-if="state.mapLoading || state.plotLoading">
                 <div id="waiting">
                     <atom-spinner
@@ -12,11 +12,12 @@
                 </div>
             </template>
 
-            <!-- DATA VIEW (Sidebar + Main Content) -->
+            <!-- Main data view -->
             <div v-if="state.file" class="data-view-wrapper">
                 <sidebar class="floating-sidebar" />
 
                 <main class="floating-main" role="main">
+                    <!-- Plot visualization area -->
                     <div class="row"
                         v-bind:class="[state.showMap ? 'h-50' : 'h-100']"
                         v-if="state.plotOn">
@@ -24,6 +25,7 @@
                             <Plotly/>
                         </div>
                     </div>
+                    <!-- 3D map visualization area -->
                     <div class="row" v-bind:class="[state.plotOn ? 'h-50' : 'h-100']"
                         v-if="state.mapAvailable && mapOk && state.showMap">
                         <div class="col-12 noPadding">
@@ -33,13 +35,13 @@
                 </main>
             </div>
 
-            <!-- INITIAL HOME SCREEN (Logo + Upload) -->
+            <!-- Initial home screen -->
             <div v-else class="home-initial-screen">
                 <img :src="arenaLogo" alt="Arena Logo" class="arena-logo-img" />
                 <Dropzone />
             </div>
 
-            <!-- FLOATING WIDGETS (remain on top) -->
+            <!-- Floating widgets -->
             <TxInputs fixed-aspect-ratio v-if="state.mapAvailable && state.showMap && state.showRadio"></TxInputs>
             <ParamViewer    @close="state.showParams = false" v-if="state.showParams"></ParamViewer>
             <MessageViewer  @close="state.showMessages = false" v-if="state.showMessages"></MessageViewer>
@@ -49,7 +51,7 @@
             <EkfHelperTool  @close="state.showEkfHelper = false" v-if="state.showEkfHelper"></EkfHelperTool>
         </div>
 
-        <!-- Floating chatbot -->
+        <!-- Floating chatbot interface -->
         <button
             class="chat-float-btn"
             v-if="state.file && !floatingBotVisible"
@@ -66,6 +68,10 @@
 
 <script>
 import isOnline from 'is-online'
+import Vue from 'vue'
+import { AtomSpinner } from 'epic-spinners'
+import { Color } from 'cesium'
+import colormap from 'colormap'
 import Plotly from '@/components/Plotly.vue'
 import CesiumViewer from '@/components/CesiumViewer.vue'
 import Sidebar from '@/components/Sidebar.vue'
@@ -75,35 +81,33 @@ import ParamViewer from '@/components/widgets/ParamViewer.vue'
 import MessageViewer from '@/components/widgets/MessageViewer.vue'
 import DeviceIDViewer from '@/components/widgets/DeviceIDViewer.vue'
 import AttitudeViewer from '@/components/widgets/AttitudeWidget.vue'
-import { store } from '@/components/Globals.js'
-import { AtomSpinner } from 'epic-spinners'
-import { Color } from 'cesium'
-import colormap from 'colormap'
-import { DataflashDataExtractor } from '../tools/dataflashDataExtractor'
-import { MavlinkDataExtractor } from '../tools/mavlinkDataExtractor'
-import { DjiDataExtractor } from '../tools/djiDataExtractor'
 import MagFitTool from '@/components/widgets/MagFitTool.vue'
 import EkfHelperTool from '@/components/widgets/EkfHelperTool.vue'
 import ChatBot from '@/components/ChatBot.vue'
-import Vue from 'vue'
-
+import { store } from '@/components/Globals.js'
+import { DataflashDataExtractor } from '../tools/dataflashDataExtractor'
+import { MavlinkDataExtractor } from '../tools/mavlinkDataExtractor'
+import { DjiDataExtractor } from '../tools/djiDataExtractor'
 import arenaLogo from '@/assets/arena_logo.png'
 
 export default {
     name: 'Home',
+
     created () {
         this.$eventHub.$on('messagesDoneLoading', this.prepareAndExtractData)
         this.state.messages = {}
-        this.state.rawMessages = {} // Initialize our new raw data store for the chatbot
+        this.state.rawMessages = {} // Initialize raw data store for chatbot
         this.state.timeAttitude = []
         this.state.timeAttitudeQ = []
         this.state.currentTrajectory = []
         isOnline().then(a => { this.state.isOnline = a })
     },
+
     beforeDestroy () {
         this.$eventHub.$off('messages')
         this.$eventHub.$off('messagesDoneLoading')
     },
+
     data () {
         return {
             state: store,
@@ -112,16 +116,17 @@ export default {
             arenaLogo
         }
     },
+
     methods: {
+        // ========================================
+        // Data preparation and extraction
+        // ========================================
         prepareAndExtractData () {
-            // Create a deep copy of the raw messages before they are processed for visualization.
-            // This is the pristine data the chatbot will use.
             this.state.rawMessages = JSON.parse(JSON.stringify(this.state.messages))
             console.log('Saved raw messages for chatbot:', Object.keys(this.state.rawMessages))
-
-            // Now, proceed with the original data extraction for visualization.
             this.extractFlightData()
         },
+
         extractFlightData () {
             if (this.dataExtractor === null) {
                 if (this.state.logType === 'tlog') {
@@ -132,6 +137,7 @@ export default {
                     this.dataExtractor = DataflashDataExtractor
                 }
             }
+
             if ('FMTU' in this.state.messages && this.state.messages.FMTU.length === 0) {
                 this.state.processStatus = 'ERROR PARSING?'
             }
@@ -150,7 +156,6 @@ export default {
             if (this.state.mission.length === 0) {
                 this.state.mission = this.dataExtractor.extractMission(this.state.messages)
             }
-
             Vue.delete(this.state.messages, 'CMD')
 
             this.state.vehicle = this.dataExtractor.extractVehicleType(this.state.messages)
@@ -165,6 +170,7 @@ export default {
                     }
                 }
             }
+
             if (this.state.vehicle === 'quadcopter') {
                 if (this.state.params?.get('FRAME_TYPE') === 0) {
                     this.state.vehicle += '+'
@@ -172,6 +178,7 @@ export default {
                     this.state.vehicle += 'x'
                 }
             }
+
             if (this.state.textMessages.length === 0) {
                 this.state.textMessages = this.dataExtractor.extractTextMessages(this.state.messages)
             }
@@ -180,6 +187,7 @@ export default {
             if (this.state.colors.length === 0) {
                 this.generateColorMMap()
             }
+
             this.state.attitudeSources = this.dataExtractor.extractAttitudeSources(this.state.messages)
             if (this.state.attitudeSources.quaternions.length > 0) {
                 const source = this.state.attitudeSources.quaternions[0]
@@ -209,6 +217,7 @@ export default {
                     console.log('unable to load trajectory')
                 }
             }
+
             try {
                 if (this.state.messages?.GPS?.time_boot_ms) {
                     this.state.metadata = { startTime: this.dataExtractor.extractStartTime(this.state.messages.GPS) }
@@ -221,6 +230,7 @@ export default {
                 console.log('unable to load metadata')
                 console.log(error)
             }
+
             try {
                 this.state.namedFloats = this.dataExtractor.extractNamedValueFloatNames(this.state.messages)
                 console.log(this.state.namedFloats)
@@ -228,16 +238,17 @@ export default {
                 console.log('unable to load named floats')
                 console.log(error)
             }
-            // Do not delete data that the chatbot needs for context.
-            // Vue.delete(this.state.messages, 'AHR2')
-            // Vue.delete(this.state.messages, 'POS')
-            // Vue.delete(this.state.messages, 'GPS')
+
+            Vue.delete(this.state.messages, 'AHR2')
+            Vue.delete(this.state.messages, 'POS')
+            Vue.delete(this.state.messages, 'GPS')
 
             this.state.fences = this.dataExtractor.extractFences(this.state.messages)
 
             this.state.processStatus = 'Processed!'
             this.state.processDone = true
             setTimeout(() => { this.$eventHub.$emit('set-selected', 'plot') }, 2000)
+
             if (!this.state.mapAvailable) {
                 this.state.mapAvailable = this.state.currentTrajectory.length > 0
                 if (this.state.mapAvailable) {
@@ -246,6 +257,9 @@ export default {
             }
         },
 
+        // ========================================
+        // Color mapping generation
+        // ========================================
         generateColorMMap () {
             const colorMapOptions = {
                 colormap: 'hsv',
@@ -261,6 +275,10 @@ export default {
             }
         }
     },
+
+    // ========================================
+    // Component registration
+    // ========================================
     components: {
         Sidebar,
         Plotly,
@@ -276,6 +294,10 @@ export default {
         ChatBot,
         Dropzone
     },
+
+    // ========================================
+    // Computed properties
+    // ========================================
     computed: {
         mapOk () {
             return (this.state.flightModeChanges !== undefined &&
@@ -373,7 +395,7 @@ export default {
         cursor: pointer;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         z-index: 9998;
-        background-color: rgb(152, 151, 151);
+        background-color: #31323D;
         color: rgb(210, 210, 210);
     }
 

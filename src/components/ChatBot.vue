@@ -1,13 +1,13 @@
 <template>
+    <!-- Chatbot container -->
     <div :class="['chatbot-container', { floating }]">
-        <!-- Close button is always visible -->
         <div class="chat-header">
             <button class="close-btn" @click="close()">
                 <i class="fa fa-times" aria-hidden="true"></i>
             </button>
         </div>
 
-        <!-- Chat View: Always shown, as the component only renders after a file is loaded -->
+        <!-- Chat view -->
         <div class="chat-view">
             <div class="chat-window" ref="chatWindow">
                 <div v-for="(msg, index) in messages" :key="index" class="chat-message" :class="msg.role">
@@ -20,6 +20,7 @@
                 </div>
             </div>
 
+            <!-- Chat input form -->
             <form @submit.prevent="sendMessage" class="chat-input-form">
                 <input v-model="newMessage" type="text" placeholder="Ask about the flight..."
                 :disabled="isLoading" required />
@@ -34,8 +35,6 @@
 <script>
 import axios from 'axios'
 import { store } from '@/components/Globals.js'
-
-// --- 1. IMPORT THE LIBRARIES ---
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 
@@ -60,18 +59,34 @@ export default {
         }
     },
     methods: {
+        // ========================================
+        // UI interaction methods
+        // ========================================
         close () {
             this.$emit('close')
         },
+
+        scrollToBottom () {
+            this.$nextTick(() => {
+                const chatWindow = this.$refs.chatWindow
+                if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight
+            })
+        },
+
+        // ========================================
+        // Message handling and API communication
+        // ========================================
         async sendMessage () {
             const userInput = this.newMessage.trim()
             if (!userInput || this.isLoading) return
 
+            // Add user message to chat
             this.messages.push({ role: 'user', text: userInput })
             this.newMessage = ''
             this.scrollToBottom()
             this.isLoading = true
 
+            // Prepare payload for API request
             const payload = {
                 question: userInput,
                 history: this.messages.slice(0, -1),
@@ -80,6 +95,7 @@ export default {
             }
 
             try {
+                // Send request to chatbot backend
                 const response = await axios.post('http://127.0.0.1:5000/api/chat', payload)
                 this.messages.push({ role: 'bot', text: response.data.reply })
             } catch (error) {
@@ -90,30 +106,26 @@ export default {
                 this.scrollToBottom()
             }
         },
-        scrollToBottom () {
-            this.$nextTick(() => {
-                const chatWindow = this.$refs.chatWindow
-                if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight
-            })
-        },
-        // --- 2. UPDATE THE formatMessage METHOD ---
+
+        // ========================================
+        // Message formatting and sanitization
+        // ========================================
         formatMessage (text) {
             if (typeof text !== 'string') return ''
 
-            // Configure marked to treat newlines as <br> tags, which is great for chat.
             marked.setOptions({
                 breaks: true
             })
-
-            // 1. Convert Markdown to HTML using marked
             const rawHtml = marked.parse(text)
-
-            // 2. Sanitize the HTML to prevent XSS attacks. This is VERY important.
             const sanitizedHtml = DOMPurify.sanitize(rawHtml)
 
             return sanitizedHtml
         }
     },
+
+    // ========================================
+    // Component lifecycle hooks
+    // ========================================
     mounted () {
         if (this.messages.length === 0) {
             this.messages.push({
@@ -122,6 +134,10 @@ export default {
             })
         }
     },
+
+    // ========================================
+    // Watchers
+    // ========================================
     watch: {
         messages () {
             this.scrollToBottom()
@@ -175,99 +191,6 @@ export default {
 .close-btn:hover {
     background: #c9c9c9;
 }
-
-/* --- Uploader Styles --- */
-.uploader-view {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.drop-area {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    border: 2px dashed #b0b0b0;
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: #555;
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-.drop-area.drag-over {
-    background-color: #eaf2ff;
-    border-color: #007aff;
-}
-
-.upload-icon {
-    font-size: 48px;
-    color: #007aff;
-    margin-bottom: 16px;
-}
-
-.upload-title {
-    font-size: 1.2rem;
-    font-weight: 500;
-    margin: 0 0 4px 0;
-}
-
-.upload-subtitle {
-    font-size: 0.9rem;
-    color: #777;
-    margin: 0;
-}
-
-.upload-or {
-    margin: 16px 0;
-    font-size: 0.9rem;
-    color: #999;
-}
-
-.upload-btn {
-    background-color: #007aff;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.upload-btn:hover {
-    background-color: #0056b3;
-}
-.processing-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    border-radius: 20px;
-}
-
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border-left-color: #007aff;
-  animation: spin 1s ease infinite;
-  margin-bottom: 10px;
-}
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* Chat View and Message Styles */
 .chat-view {

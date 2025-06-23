@@ -1,8 +1,5 @@
 <template>
     <div>
-        <!-- <li  v-if="file==null && !sampleLoaded" >
-            <a @click="onLoadSample('sample')" class="section" id="open-sample">Play Sample</a>
-        </li> -->
         <li v-if="url">
             <a @click="share" class="section"><i class="fas fa-share-alt"></i> {{ shared ? 'Copied to clipboard!' :
                 'Share link'}}</a>
@@ -27,13 +24,10 @@
                 <img class="help-icon-img" :src="infoCircleSvg" alt="info" />
             </button>
         </div>
-        <!--<b-form-checkbox @change="uploadFile()" class="uploadCheckbox" v-if="file!=null && !uploadStarted"> Upload
-        </b-form-checkbox>-->
-        <!-- Progress bars removed as requested -->
     </div>
 </template>
+
 <script>
-// import VProgress from './SideBarFileManagerProgressBar.vue'
 import Worker from '../tools/parsers/parser.worker.js'
 import { store } from './Globals'
 import infoCircleSvg from '../assets/info.circle.svg'

@@ -1,16 +1,17 @@
 <template>
-<!-- HEADER -->
     <div class="nav-side-menu col-lg-2">
-        <!-- TABHOLDER -->
+        <!-- Toggle button and collapsible content -->
         <i class="fa fa-bars fa-2x toggle-btn" v-b-toggle.menucontent></i>
         <b-collapse class="menu-content collapse out" id="menucontent" visible>
+
             <!-- Back button header -->
             <div class="sidebar-header" v-if="state.file">
                 <button @click="goBack" class="back-button" title="Go back to upload">
                     <i class="fa fa-arrow-left"></i>
                 </button>
             </div>
-            <!-- Button grid -->
+
+            <!-- Tool button grid -->
             <div v-if="state.file" class="button-grid">
                 <button
                     class="grid-button"
@@ -105,6 +106,8 @@
                     <i class="fa fa-file"></i>
                 </button>
             </div>
+
+            <!-- Radio mode selector -->
             <div v-if="state.file" class="text-button-group full-width">
                 <div class="radio-mode-wrapper">
                     <span>Radio Mode</span>
@@ -114,6 +117,7 @@
                     </select>
                 </div>
             </div>
+
             <!-- Current file text -->
             <span v-if="state.file" class="filename">Current file: {{state.file}}</span>
 
@@ -133,7 +137,7 @@
                 </ul>
             </div>
         </b-collapse>
-        <!-- TOGGLE MENU -->
+
         <div class="menu-list">
             <b-collapse class="menu-content collapse out" id="menucontent" visible>
 
@@ -141,12 +145,8 @@
                     <plotSetup/>
                     <message-menu/>
                 </div>
-                <!-- This section is no longer needed as Dropzone is removed -->
-                <!-- <div v-if="selected==='home'">
-                    <Dropzone/>
-                </div> -->
+
                 <div v-if="selected==='other'">
-                    <!-- PARAM/MESSAGES/RADIO -->
                     <hr>
                     <a class="centered-section"> Show / hide </a>
                     <div v-if="state.processDone" class="show-hide">
@@ -233,18 +233,18 @@
         </div>
     </div>
 </template>
-<script>
 
+<script>
 import MessageMenu from './SideBarMessageMenu.vue'
 import { store } from './Globals.js'
 import PlotSetup from './PlotSetup.vue'
-// import ChatBot from './ChatBot.vue'
 
 export default {
     name: 'sidebar',
+
     data () {
         return {
-            selected: 'home', // This can default to plot now, or be set after file load
+            selected: 'home',
             state: store,
             chunks: false,
             blob: null,
@@ -256,11 +256,18 @@ export default {
             showFilesList: false
         }
     },
+
     methods: {
+        // ========================================
+        // UI state management
+        // ========================================
         setSelected (selected) {
             this.selected = selected
         },
 
+        // ========================================
+        // Screen recording functionality
+        // ========================================
         startCapture (displayMediaOptions) {
             navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: 'screen' } })
                 .then((stream) => {
@@ -293,9 +300,13 @@ export default {
             }
         },
 
+        // ========================================
+        // File download functionality
+        // ========================================
         download () {
             this.$refs.downloadFile.click()
         },
+
         downloadTrimmed () {
             this.$eventHub.$emit('trimFile')
         },
@@ -323,32 +334,44 @@ export default {
             this.downloadBlob(this.state.files[filename], filename, 'application/octet-stream')
         },
 
+        // ========================================
+        // Navigation and UI controls
+        // ========================================
         goBack () {
             window.location.reload()
         },
+
         toggleFilesList () {
             this.showFilesList = !this.showFilesList
         }
     },
+
+    // ========================================
+    // Component lifecycle hooks
+    // ========================================
     created () {
         this.$eventHub.$on('set-selected', this.setSelected)
     },
+
+    // ========================================
+    // Watchers
+    // ========================================
     watch: {
         blob () {
             this.downloadURL = URL.createObjectURL(this.blob)
         }
     },
+
+    // ========================================
+    // Component registration
+    // ========================================
     components: {
         PlotSetup,
         MessageMenu
-        // ---- Remove Dropzone from components ----
-        // Dropzone,
-        // ChatBot
     }
 }
 </script>
 
-<!-- The <style> sections of Sidebar.vue remain unchanged. -->
 <style scoped>
 
 @media (min-width: 575px) and (max-width: 992px) {
@@ -552,337 +575,337 @@ a.centered-section {
 }
 /* NAV SIDE MENU */
 
+.nav-side-menu {
+    overflow-x: hidden;
+    padding: 0;
+    position: absolute;
+    top: 0px;
+    height: 100%;
+    color: rgb(255, 255, 255);
+}
+.nav-side-menu .toggle-btn {
+    display: none;
+}
+
+/* UL/LI */
+
+.nav-side-menu ul,
+.nav-side-menu li {
+    list-style: none;
+    padding: 0px;
+    margin: 0px;
+    line-height: 35px;
+    cursor: pointer;
+}
+
+.nav-side-menu ul .sub-menu li.active a,
+.nav-side-menu li .sub-menu li.active a {
+    color: #cc8812;
+}
+
+.nav-side-menu ul .sub-menu li,
+.nav-side-menu li .sub-menu li {
+    background-color: #181c20;
+    border: none;
+    line-height: 28px;
+    border-bottom: 1px solid #23282e;
+    margin-left: 0px;
+}
+
+.nav-side-menu ul .sub-menu li:hover,
+.nav-side-menu li .sub-menu li:hover {
+    background-color: #020203;
+}
+
+.nav-side-menu ul .sub-menu li:before,
+.nav-side-menu li .sub-menu li:before {
+    content: "\f105";
+    display: inline-block;
+    padding-left: 10px;
+    padding-right: 10px;
+    vertical-align: middle;
+}
+
+.nav-side-menu li {
+    padding-left: 0px;
+    border-left: 3px solid #2e353d;
+    border-bottom: 1px solid #23282e;
+}
+
+.nav-side-menu li a i {
+    padding-left: 0;
+    width: 20px;
+    padding-right: 20px;
+}
+
+.nav-side-menu li:hover {
+    border-left: 3px solid #01204191;
+    background-color: rgba(52, 70, 100, 0.336);
+    -webkit-transition: all 1s ease;
+    -moz-transition: all 1s ease;
+    -o-transition: all 1s ease;
+    -ms-transition: all 1s ease;
+    transition: all 1s ease;
+}
+
+i {
+    margin: 8px;
+}
+
+/* SHOW / HIDE */
+
+.show-hide {
+    text-align: center;
+}
+
+.circle {
+    cursor: pointer;
+    display: block;
+    margin-left: 8px;
+    background-color: rgba(47, 60, 83, 0.63);
+    width: 52px;
+    height: 52px;
+    padding: 17px;
+    border-radius: 50px;
+}
+
+.circle:hover {
+    background-color: rgba(58, 71, 94, 0.63);
+        box-shadow: 0px 0px 12px 0px rgba(24, 106, 173, 0.281);
+}
+
+.show-hide input[type=checkbox] {
+    display: none;
+    visibility: hidden;
+}
+
+.check-font {
+    padding: 0 !important;
+    font-size: 13px;
+    color: rgb(146, 143, 143);
+}
+
+/* SCROLLBAR */
+
+::-webkit-scrollbar {
+    width: 12px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+    background: rgb(60, 75, 112);
+    background: linear-gradient(0deg, rgb(67, 95, 155) 51%, rgb(61, 79, 121) 100%);
+}
+
+.custom-control-inline {
+    margin-right: 0;
+}
+
+/* BRAND */
+
+.fa-plane {
+    margin: 8px;
+    font-size: 18px;
+}
+
+.brand {
+    text-align: left;
+    font-size: 18px;
+    padding-left: 15px;
+    line-height: 50px;
+    margin-bottom: 0;
+    color: white;
+    display: block;
+}
+
+.brand a {
+    text-decoration: none;
+    color: rgb(54, 72, 114);
+}
+
+.github img {
+    float: left;
+    max-height: 30px;
+    margin-left: 8px;
+    margin-top: 10px;
+}
+
+a:hover {
+    text-decoration: none !important;
+}
+
+/* TABHOLDER */
+
+.tabholder {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-evenly;
+    overflow: hidden;
+    padding: 0px 0px 12px 0px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.tabholder a {
+    background: rgb(41,51,75);
+    float: left;
+    padding: 2px 9px 2px 9px;
+    border: 1px solid rgba(91, 100, 117, 0.76);
+    border-radius: 30px;
+}
+
+a.selected {
+    color: rgb(247, 248, 248) !important;
+    box-shadow: 0px 0px 12px 0px rgba(125,125,125,0.55);
+}
+
+.tabholder a:hover {
+    box-shadow: 0px 0px 12px 0px rgba(125,125,125,0.55);
+    -webkit-transition: all 1s ease;
+    -moz-transition: all 1s ease;
+    -o-transition: all 1s ease;
+    transition: all 1s ease;
+}
+
+/* LABELS */
+
+label {
+    display: block;
+    padding: 6px;
+}
+
+.wingspan-text {
+    width: 20%;
+    border: none;
+    border-radius: 3px;
+    background-color: rgb(175, 177, 175);
+}
+
+/* MEDIA QUERIES */
+
+@media only screen and (max-width: 992px) {
     .nav-side-menu {
-        overflow-x: hidden;
-        padding: 0;
-        position: absolute;
-        top: 0px;
-        height: 100%;
-        color: rgb(255, 255, 255);
+        position: fixed;
+        width: 100%;
+        height: auto;
+        max-height: 100%;
+        z-index: 1002;
     }
+
     .nav-side-menu .toggle-btn {
-        display: none;
-    }
-
-    /* UL/LI */
-
-    .nav-side-menu ul,
-    .nav-side-menu li {
-        list-style: none;
-        padding: 0px;
-        margin: 0px;
-        line-height: 35px;
+        display: block;
         cursor: pointer;
-    }
-
-    .nav-side-menu ul .sub-menu li.active a,
-    .nav-side-menu li .sub-menu li.active a {
-        color: #cc8812;
-    }
-
-    .nav-side-menu ul .sub-menu li,
-    .nav-side-menu li .sub-menu li {
-        background-color: #181c20;
-        border: none;
-        line-height: 28px;
-        border-bottom: 1px solid #23282e;
-        margin-left: 0px;
-    }
-
-    .nav-side-menu ul .sub-menu li:hover,
-    .nav-side-menu li .sub-menu li:hover {
-        background-color: #020203;
-    }
-
-    .nav-side-menu ul .sub-menu li:before,
-    .nav-side-menu li .sub-menu li:before {
-        content: "\f105";
-        display: inline-block;
-        padding-left: 10px;
-        padding-right: 10px;
-        vertical-align: middle;
-    }
-
-    .nav-side-menu li {
-        padding-left: 0px;
-        border-left: 3px solid #2e353d;
-        border-bottom: 1px solid #23282e;
-    }
-
-    .nav-side-menu li a i {
-        padding-left: 0;
-        width: 20px;
-        padding-right: 20px;
-    }
-
-    .nav-side-menu li:hover {
-        border-left: 3px solid #01204191;
-        background-color: rgba(52, 70, 100, 0.336);
-        -webkit-transition: all 1s ease;
-        -moz-transition: all 1s ease;
-        -o-transition: all 1s ease;
-        -ms-transition: all 1s ease;
-        transition: all 1s ease;
-    }
-
-    i {
-        margin: 8px;
-    }
-
-    /* SHOW / HIDE */
-
-    .show-hide {
+        position: absolute;
+        right: 10px;
+        margin: 0;
+        top: 5px;
+        z-index: 10 !important;
+        padding: 3px;
+        background-color: rgba(248, 248, 248, 0.769);
+        color: rgb(58, 58, 58);
+        height: auto;
+        width: 40px;
         text-align: center;
+        -webkit-border-radius: 2px;
+        -moz-border-radius: 2px;
+        border-radius: 2px;
     }
-
-    .circle {
-        cursor: pointer;
-        display: block;
-        margin-left: 8px;
-        background-color: rgba(47, 60, 83, 0.63);
-        width: 52px;
-        height: 52px;
-        padding: 17px;
-        border-radius: 50px;
-    }
-
-    .circle:hover {
-        background-color: rgba(58, 71, 94, 0.63);
-            box-shadow: 0px 0px 12px 0px rgba(24, 106, 173, 0.281);
-    }
-
-    .show-hide input[type=checkbox] {
-        display: none;
-        visibility: hidden;
-    }
-
-    .check-font {
-        padding: 0 !important;
-        font-size: 13px;
-        color: rgb(146, 143, 143);
-    }
-
-    /* SCROLLBAR */
-
-    ::-webkit-scrollbar {
-        width: 12px;
-        background-color: rgba(0, 0, 0, 0);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        border-radius: 5px;
-        box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
-        -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
-        -moz-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
-        background: rgb(60, 75, 112);
-        background: linear-gradient(0deg, rgb(67, 95, 155) 51%, rgb(61, 79, 121) 100%);
-    }
-
-    .custom-control-inline {
-        margin-right: 0;
-    }
-
-    /* BRAND */
-
-    .fa-plane {
-        margin: 8px;
-        font-size: 18px;
-    }
-
-    .brand {
-        text-align: left;
-        font-size: 18px;
-        padding-left: 15px;
-        line-height: 50px;
-        margin-bottom: 0;
-        color: white;
-        display: block;
-    }
-
-    .brand a {
-        text-decoration: none;
-        color: rgb(54, 72, 114);
-    }
-
-    .github img {
-        float: left;
-        max-height: 30px;
-        margin-left: 8px;
-        margin-top: 10px;
-    }
-
-    a:hover {
-        text-decoration: none !important;
-    }
-
-    /* TABHOLDER */
-
-    .tabholder {
-        display: flex;
-        flex-flow: row wrap;
-        justify-content: space-evenly;
-        overflow: hidden;
-        padding: 0px 0px 12px 0px;
-        cursor: pointer;
-        font-size: 16px;
-    }
-
-    .tabholder a {
-        background: rgb(41,51,75);
-        float: left;
-        padding: 2px 9px 2px 9px;
-        border: 1px solid rgba(91, 100, 117, 0.76);
-        border-radius: 30px;
-    }
-
-    a.selected {
-        color: rgb(247, 248, 248) !important;
-        box-shadow: 0px 0px 12px 0px rgba(125,125,125,0.55);
-    }
-
-    .tabholder a:hover {
-        box-shadow: 0px 0px 12px 0px rgba(125,125,125,0.55);
-        -webkit-transition: all 1s ease;
-        -moz-transition: all 1s ease;
-        -o-transition: all 1s ease;
-        transition: all 1s ease;
-    }
-
-    /* LABELS */
-
-    label {
-        display: block;
-        padding: 6px;
-    }
-
-    .wingspan-text {
-        width: 20%;
-        border: none;
-        border-radius: 3px;
-        background-color: rgb(175, 177, 175);
-    }
-
-    /* MEDIA QUERIES */
-
-    @media only screen and (max-width: 992px) {
-        .nav-side-menu {
-            position: fixed;
-            width: 100%;
-            height: auto;
-            max-height: 100%;
-            z-index: 1002;
-        }
-
-        .nav-side-menu .toggle-btn {
-            display: block;
-            cursor: pointer;
-            position: absolute;
-            right: 10px;
-            margin: 0;
-            top: 5px;
-            z-index: 10 !important;
-            padding: 3px;
-            background-color: rgba(248, 248, 248, 0.769);
-            color: rgb(58, 58, 58);
-            height: auto;
-            width: 40px;
-            text-align: center;
-            -webkit-border-radius: 2px;
-            -moz-border-radius: 2px;
-            border-radius: 2px;
-        }
-
-            main {
-            margin-top: 45px;
-        }
-
-        .col-lg-10 {
-            max-width: 100%;
-            height: 93%;
-        }
-
-        .col-md-9 {
-            max-width: 100% !important;
-        }
-    }
-
-    /* MIN */
-
-    @media only screen and (min-width: 991px) and (max-width: 1439px) {
-        .nav-side-menu {
-            max-width: 27% !important;
-        }
-
-        .col-lg-10 {
-            max-width: 73% !important;
-        }
 
         main {
-            height: 100%;
-        }
+        margin-top: 45px;
     }
 
-    @media only screen and (min-width: 1440px) and (max-width: 2000px) {
-        .nav-side-menu {
-        max-width: 20% !important;
-        }
-
-        main {
-            height: 100%;
-        }
-
-        .col-lg-10 {
-            max-width: 80% !important;
-        }
+    .col-lg-10 {
+        max-width: 100%;
+        height: 93%;
     }
 
-    @media only screen and (min-width: 2000px) {
-        .nav-side-menu {
-            max-width: 15% !important;
-        }
+    .col-md-9 {
+        max-width: 100% !important;
+    }
+}
 
-        main {
-            height: 100%;
-        }
+/* MIN */
 
-        .col-lg-10 {
-            max-width: 85% !important;
-        }
+@media only screen and (min-width: 991px) and (max-width: 1439px) {
+    .nav-side-menu {
+        max-width: 27% !important;
     }
 
-    .filename {
-        display: block;
-        text-align: left;
-        opacity: 0.8;
-        margin: 3px;
-        margin-bottom: 10px;
-        padding-left: 10px;
-        font-size: 14px;
+    .col-lg-10 {
+        max-width: 73% !important;
     }
 
-    .download-text {
-        color: #fff;
-        text-decoration: none;
+    main {
+        height: 100%;
     }
-    .download-text:hover {
-        text-decoration: none;
-        color: #fff;
-    }
-    ul.files-list {
-        margin: 40px;
-        border: solid 1px gray;
-        border-radius: 15px;
-        text-align: left;
-        padding-left: 10px;
-        cursor: default;
+}
+
+@media only screen and (min-width: 1440px) and (max-width: 2000px) {
+    .nav-side-menu {
+    max-width: 20% !important;
     }
 
-    .files-list li {
-        border-left: none;
+    main {
+        height: 100%;
     }
-    .files-header {
-        border-left: none;
-        margin-left: 40%;
 
+    .col-lg-10 {
+        max-width: 80% !important;
     }
+}
+
+@media only screen and (min-width: 2000px) {
+    .nav-side-menu {
+        max-width: 15% !important;
+    }
+
+    main {
+        height: 100%;
+    }
+
+    .col-lg-10 {
+        max-width: 85% !important;
+    }
+}
+
+.filename {
+    display: block;
+    text-align: left;
+    opacity: 0.8;
+    margin: 3px;
+    margin-bottom: 10px;
+    padding-left: 10px;
+    font-size: 14px;
+}
+
+.download-text {
+    color: #fff;
+    text-decoration: none;
+}
+.download-text:hover {
+    text-decoration: none;
+    color: #fff;
+}
+ul.files-list {
+    margin: 40px;
+    border: solid 1px gray;
+    border-radius: 15px;
+    text-align: left;
+    padding-left: 10px;
+    cursor: default;
+}
+
+.files-list li {
+    border-left: none;
+}
+.files-header {
+    border-left: none;
+    margin-left: 40%;
+
+}
 </style>

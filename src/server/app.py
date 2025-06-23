@@ -1,8 +1,5 @@
-# backend/app.py
-
 import os
 import json
-import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
@@ -13,6 +10,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type"]}})
 
+#========================================
+# Model setup (Gemini 2.5 Flash)
+#========================================
 try:
     genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
     model = genai.GenerativeModel('gemini-2.5-flash')
@@ -20,6 +20,9 @@ except Exception as e:
     print(f"Error configuring Google AI, please check your API key: {e}")
     model = None
 
+#========================================
+# Column selection prompt
+#========================================
 def create_column_selection_prompt(user_question, telemetry_data):
     schema = ""
     for key, value in telemetry_data.items():
@@ -40,49 +43,11 @@ def create_column_selection_prompt(user_question, telemetry_data):
     Return ONLY the single, exact message type name from the schema (e.g., GLOBAL_POSITION_INT, POS[0]). Do not add any explanation or extra text.
     """
     return prompt
-    if not isinstance(column_data, dict) or not column_data:
-        return f"No data available for message type {column_name}."
 
-    summary = f"Data Summary for message type '{column_name}':\n"
-    sample_data = []
-    
-    try:
-        all_fields = list(column_data.keys())
-        print(f"DEBUG: All fields: {all_fields}")
-        if not all_fields: return summary + "[No fields found]"
-
-        field_priority = ['TimeUS', 'time_boot_ms', 'Alt', 'relative_alt', 'Roll', 'Pitch', 'Yaw', 'Vbat', 'Curr', 'Mode', 'Text']
-        fields_to_summarize = [f for f in field_priority if f in all_fields]
-        print(f"DEBUG: Fields to summarize: {fields_to_summarize}")
-        if not fields_to_summarize:
-            fields_to_summarize = all_fields[:5]
-
-        num_messages = len(column_data[all_fields[0]])
-        print(f"DEBUG: Number of messages: {num_messages}")
-        if num_messages == 0: return summary + "[Message type is empty]"
-        
-        for i in range(min(5, num_messages)):
-            message_instance = {}
-            for key in fields_to_summarize:
-                if i < len(column_data[key]):
-                    value = column_data[key][i]
-                    if isinstance(value, list):
-                        message_instance[key] = value[0] 
-                    else:
-                        message_instance[key] = value
-            sample_data.append(message_instance)
-            
-        if sample_data:
-            summary += f"Fields: {', '.join(fields_to_summarize)}\n"
-            summary += json.dumps(sample_data, indent=2)
-
-    except Exception as e:
-        print(f"DEBUG: Error processing data for {column_name}: {e}")
-        summary += f"[Error processing sample data for {column_name}]"
-    
-    return summary
-
-def create_final_answer_prompt(user_question, history, log_type, data_summary):
+#========================================
+# Final answer prompt
+#========================================
+def create_final_answer_prompt(history, log_type, data_summary):
     chat_history_text = ""
     for message in history:
         role = "User" if message['role'] == 'user' else "You"
@@ -111,6 +76,9 @@ def create_final_answer_prompt(user_question, history, log_type, data_summary):
     """
     return prompt
 
+#========================================
+# Chat endpoint
+#========================================
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
     if not model:
@@ -126,35 +94,37 @@ def chat_handler():
         return jsonify({"error": "Missing question or telemetry data."}), 400
 
     try:
-        # --- STEP 1: IDENTIFY THE RELEVANT COLUMN ---
+        # Select the most relevant column
         column_selection_prompt = create_column_selection_prompt(user_question, telemetry_data)
         response = model.generate_content(column_selection_prompt)
         
-        # Clean the response to get a valid key that might have an instance number
+        # Clean data
         selected_column = response.text.strip()
-        print(f"--- LLM selected column: '{selected_column}' ---")
 
+        # Check if the selected column is in the telemetry data
         if selected_column not in telemetry_data:
-            print(f"Error: LLM returned an invalid column name: '{selected_column}'. Falling back.")
             reply = "I'm sorry, I couldn't identify the right data to answer your question. Could you please rephrase it?"
             return jsonify({"reply": reply})
 
-        # --- STEP 2: RETRIEVE AND SUMMARIZE DATA FOR THE SELECTED COLUMN ---
+        # Get data for the selected column
         relevant_data = telemetry_data.get(selected_column)
         
-        # --- STEP 3: GENERATE THE FINAL ANSWER USING THE TARGETED DATA ---
-        final_prompt = create_final_answer_prompt(user_question, history, log_type, relevant_data)
+        # Provide data as context
+        final_prompt = create_final_answer_prompt(history, log_type, relevant_data)
         
+        # Generate final answer
         chat = model.start_chat(history=[])
         full_content = final_prompt + f"\nUser: {user_question}"
         final_response = chat.send_message(full_content)
         
-        print(f"--- LLM Final Reply: '{final_response.text}' ---\n")
         return jsonify({"reply": final_response.text})
 
     except Exception as e:
         print(f"An error occurred in the chat handler: {e}")
         return jsonify({"error": "An unexpected error occurred while processing your request."}), 500
 
+#========================================
+# Main
+#========================================
 if __name__ == '__main__':
     app.run(debug=True)
