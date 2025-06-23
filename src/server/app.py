@@ -31,48 +31,74 @@ def create_column_selection_prompt(user_question, telemetry_data):
             schema += f"- {key}: {fields}\n"
 
     prompt = f"""
-    You are a data routing tool. Your task is to identify the single most relevant telemetry message type for answering a user's question about flight data.
-    Analyze the user's question and select the best message type from the following schema.
+    You are an expert data routing tool for flight telemetry logs. Your task is to identify the **absolute minimum** set of telemetry message types required to answer a user's question.
+
+    Instructions:
+    1. Analyze the user's question and the provided schema.
+    2. Select the single most relevant message type if possible.
+    3. Only select multiple message types if it is **strictly necessary** to correlate information to answer the question (e.g., questions about "anomalies" which require checking BAT, GPS, ERR, and MODE).
+    4. Be as conservative as possible. Do not include extra message types "just in case."
+    5. Unless the user's question is about the attitude of the vehicle, do not select ATT.
 
     Schema of Available Message Types and Fields:
     {schema}
 
     User Question: "{user_question}"
 
-    Based on the user's question, which message type is most likely to contain the answer?
-    Return ONLY the single, exact message type name from the schema (e.g., GLOBAL_POSITION_INT, POS[0]). Do not add any explanation or extra text.
+    Return a comma-separated list of the exact message type name(s) from the schema (e.g., GLOBAL_POSITION_INT or ATT,BAT,GPS,ERR,MODE). Do not add any explanation or extra text.
     """
     return prompt
 
 #========================================
-# Final answer prompt
+# Iterative analysis prompt
 #========================================
-def create_final_answer_prompt(history, log_type, data_summary):
+def create_iterative_analysis_prompt(user_question, column_name, column_data_summary):
+    prompt = f"""
+    You are a data analysis sub-agent. Your task is to analyze a single column of telemetry data and report findings related to the user's question.
+
+    **User's overarching question:** "{user_question}"
+
+    **Data to analyze (from log column '{column_name}'):**
+    {column_data_summary}
+
+    **Your Instructions:**
+    - Analyze ONLY the data provided above.
+    - Summarize any relevant patterns, values, or anomalies found in THIS data that might help answer the user's main question.
+    - Be concise.
+    - **Do not attempt to provide a final answer to the user.** Your output will be combined with other analyses.
+    - Output your findings as a short, analytical summary.
+    """
+    return prompt
+
+#========================================
+# Synthesis prompt
+#========================================
+def create_synthesis_prompt(user_question, history, partial_analyses):
     chat_history_text = ""
     for message in history:
         role = "User" if message['role'] == 'user' else "You"
         chat_history_text += f"{role}: {message['text']}\n"
 
+    analysis_text = "\n".join(f"- Analysis of {analysis['column']}: {analysis['summary']}" for analysis in partial_analyses)
+
     prompt = f"""
-    You are an expert UAV flight analyst. Your role is to analyze a specific slice of telemetry data from a .{log_type} log file and answer the user's question.
+    You are an expert UAV flight analyst. Your role is to synthesize preliminary findings from various data logs into a final, comprehensive answer for the user.
 
-    Your Task:
+    **Conversation History:**
+    {chat_history_text}
 
-    1. Analyze the provided targeted telemetry data summary and the user's question.
-    2. Refer to the official ArduPilot log documentation when needed: https://ardupilot.org/plane/docs/logmessages.html
-    3. Answer based only on the data provided. If the data is insufficient, state that clearly. For calculations like "highest" or "average", use the entire dataset implied by the summary.
-    4. Behave agentically: maintain conversation context and ask for clarification if the user's query is ambiguous.
-    5. For high-level questions about "anomalies," look for patterns like:
-        - Sudden drops in altitude (ATT.Alt).
-        - Significant battery voltage drops (BAT.Volt).
-        - Loss of GPS satellites (GPS.NSats < 5).
-        - Critical error messages (ERR).
-        - Uncommanded flight mode changes (MODE).
-    6. Targeted Telemetry Data Summary:
-        {data_summary}
-    7. Conversation History:
-        {chat_history_text}
-    8. User's new question is next. Analyze the data and history to provide a helpful, data-driven answer.
+    **User's Current Question:**
+    "{user_question}"
+
+    **Preliminary Data Analyses:**
+    {analysis_text}
+
+    **Your Task:**
+    1. Review the user's question and the preliminary analyses.
+    2. Synthesize all the information into a single, cohesive, and easy-to-understand answer.
+    3. Do not mention that you reviewed "preliminary analyses" or talk about your internal process. Act as a single, authoritative expert.
+    4. If the combined analyses are insufficient to answer the question, state that clearly.
+    5. Answer based *only* on the provided analyses and history. Refer to the official ArduPilot log documentation when needed: https://ardupilot.org/plane/docs/logmessages.html
     """
     return prompt
 
@@ -84,38 +110,49 @@ def chat_handler():
     if not model:
         return jsonify({"error": "LLM model is not configured. Check your API key."}), 500
     
+    # Get data from request
     data = request.json
     user_question = data.get('question', '')
     history = data.get('history', [])
     telemetry_data = data.get('telemetryData', {})
-    log_type = data.get('logType', 'log')
 
     if not all([user_question, telemetry_data]):
         return jsonify({"error": "Missing question or telemetry data."}), 400
 
     try:
-        # Select the most relevant column
+        # 1. Select the most relevant columns
         column_selection_prompt = create_column_selection_prompt(user_question, telemetry_data)
         response = model.generate_content(column_selection_prompt)
-        
-        # Clean data
-        selected_column = response.text.strip()
+        selected_columns_str = response.text.strip()
+        selected_columns = [col.strip() for col in selected_columns_str.split(',') if col.strip()]
 
-        # Check if the selected column is in the telemetry data
-        if selected_column not in telemetry_data:
+        # 2. Check if the selected columns are in the telemetry data
+        valid_selected_columns = [col for col in selected_columns if col in telemetry_data]
+        if not valid_selected_columns:
             reply = "I'm sorry, I couldn't identify the right data to answer your question. Could you please rephrase it?"
             return jsonify({"reply": reply})
 
-        # Get data for the selected column
-        relevant_data = telemetry_data.get(selected_column)
-        
-        # Provide data as context
-        final_prompt = create_final_answer_prompt(history, log_type, relevant_data)
-        
-        # Generate final answer
-        chat = model.start_chat(history=[])
-        full_content = final_prompt + f"\nUser: {user_question}"
-        final_response = chat.send_message(full_content)
+        # 3. Analyze the selected columns
+        partial_analyses = []
+        for column_name in valid_selected_columns:
+            column_data = telemetry_data.get(column_name)
+            if not column_data:
+                continue
+
+            column_data_summary = json.dumps({column_name: column_data}, indent=2)
+            iterative_prompt = create_iterative_analysis_prompt(user_question, column_name, column_data_summary)
+            iterative_response = model.generate_content(iterative_prompt)
+            partial_analyses.append({
+                "column": column_name,
+                "summary": iterative_response.text
+            })
+
+        if not partial_analyses:
+            return jsonify({"error": "Failed to analyze the relevant data columns."}), 500
+
+        # 4. Synthesize the results
+        synthesis_prompt = create_synthesis_prompt(user_question, history, partial_analyses)
+        final_response = model.generate_content(synthesis_prompt)
         
         return jsonify({"reply": final_response.text})
 
