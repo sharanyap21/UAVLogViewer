@@ -21,7 +21,8 @@
             </div>
 
             <form @submit.prevent="sendMessage" class="chat-input-form">
-                <input v-model="newMessage" type="text" placeholder="Ask anything..." :disabled="isLoading" required />
+                <input v-model="newMessage" type="text" placeholder="Ask about the flight..."
+                :disabled="isLoading" required />
                 <button type="submit" class="send-btn" :disabled="isLoading">
                     <i class="fa fa-arrow-up" aria-hidden="true"></i>
                 </button>
@@ -32,7 +33,11 @@
 
 <script>
 import axios from 'axios'
-import { store } from '@/components/Globals.js' // Import global state
+import { store } from '@/components/Globals.js'
+
+// --- 1. IMPORT THE LIBRARIES ---
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 export default {
     name: 'ChatBot',
@@ -48,7 +53,7 @@ export default {
     },
     data () {
         return {
-            state: store, // Make global state available locally
+            state: store,
             newMessage: '',
             messages: [],
             isLoading: false
@@ -67,11 +72,10 @@ export default {
             this.scrollToBottom()
             this.isLoading = true
 
-            // The payload now uses the global telemetry data and the passed-in logType
             const payload = {
                 question: userInput,
                 history: this.messages.slice(0, -1),
-                telemetryData: this.state.messages,
+                telemetryData: this.state.rawMessages,
                 logType: this.logType
             }
 
@@ -92,14 +96,25 @@ export default {
                 if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight
             })
         },
+        // --- 2. UPDATE THE formatMessage METHOD ---
         formatMessage (text) {
             if (typeof text !== 'string') return ''
-            return text.replace(/\n/g, '<br>')
+
+            // Configure marked to treat newlines as <br> tags, which is great for chat.
+            marked.setOptions({
+                breaks: true
+            })
+
+            // 1. Convert Markdown to HTML using marked
+            const rawHtml = marked.parse(text)
+
+            // 2. Sanitize the HTML to prevent XSS attacks. This is VERY important.
+            const sanitizedHtml = DOMPurify.sanitize(rawHtml)
+
+            return sanitizedHtml
         }
     },
     mounted () {
-        // Since the chatbot is only visible after a file is loaded,
-        // we can greet the user immediately.
         if (this.messages.length === 0) {
             this.messages.push({
                 role: 'bot',
@@ -115,7 +130,6 @@ export default {
 }
 </script>
 
-<!-- Styles are unchanged -->
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
@@ -292,6 +306,43 @@ export default {
     border-radius: 20px;
     line-height: 1.5;
     word-wrap: break-word;
+}
+
+.message-bubble :deep(p) {
+    margin: 0 0 0.5em 0;
+}
+.message-bubble :deep(p:last-child) {
+    margin-bottom: 0;
+}
+
+.message-bubble :deep(ul),
+.message-bubble :deep(ol) {
+    padding-left: 20px;
+    margin: 0.5em 0;
+}
+
+.message-bubble :deep(pre) {
+    background-color: #2d2d2d;
+    color: #f8f8f2;
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 0.5em 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+.message-bubble :deep(code) {
+    background-color: rgba(0,0,0,0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.message-bubble :deep(pre code) {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
 }
 
 .chat-message.bot { align-self: flex-start; }

@@ -1,6 +1,8 @@
 # backend/app.py
+
 import os
 import json
+import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
@@ -8,122 +10,92 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configure the Flask app
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type"]}})
 
-# Apply a more permissive CORS configuration for debugging.
-CORS(app, resources={r"/api/*": {
-    "origins": "*",
-    "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type"]
-}})
-
-
-# Configure the Google Generative AI
 try:
     genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 except Exception as e:
     print(f"Error configuring Google AI, please check your API key: {e}")
     model = None
 
-def get_telemetry_summary(data):
+def create_column_selection_prompt(user_question, telemetry_data):
+    schema = ""
+    for key, value in telemetry_data.items():
+        if isinstance(value, dict) and value.keys():
+            fields = ", ".join(value.keys())
+            schema += f"- {key}: {fields}\n"
+
+    prompt = f"""
+    You are a data routing tool. Your task is to identify the single most relevant telemetry message type for answering a user's question about flight data.
+    Analyze the user's question and select the best message type from the following schema.
+
+    Schema of Available Message Types and Fields:
+    {schema}
+
+    User Question: "{user_question}"
+
+    Based on the user's question, which message type is most likely to contain the answer?
+    Return ONLY the single, exact message type name from the schema (e.g., GLOBAL_POSITION_INT, POS[0]). Do not add any explanation or extra text.
     """
-    Creates a concise and accurate summary of the telemetry data from a
-    columnar data structure (a dictionary of lists).
-    """
-    if not isinstance(data, dict) or not data:
-        return "No telemetry data available."
+    return prompt
+    if not isinstance(column_data, dict) or not column_data:
+        return f"No data available for message type {column_name}."
 
-    # For debugging: shows the structure of the data received by this function.
-    # You can comment this out in production.
-    # print(data)
+    summary = f"Data Summary for message type '{column_name}':\n"
+    sample_data = []
+    
+    try:
+        all_fields = list(column_data.keys())
+        print(f"DEBUG: All fields: {all_fields}")
+        if not all_fields: return summary + "[No fields found]"
 
-    summary = "Available MAVLink message types:\n"
-    summary += ", ".join(data.keys())
-    summary += "\n\nKey Data Points (first 3 entries):\n"
+        field_priority = ['TimeUS', 'time_boot_ms', 'Alt', 'relative_alt', 'Roll', 'Pitch', 'Yaw', 'Vbat', 'Curr', 'Mode', 'Text']
+        fields_to_summarize = [f for f in field_priority if f in all_fields]
+        print(f"DEBUG: Fields to summarize: {fields_to_summarize}")
+        if not fields_to_summarize:
+            fields_to_summarize = all_fields[:5]
 
-    # A more accurate list of important message types to look for.
-    # The function will only summarize the ones that exist in the log.
-    key_messages_to_summarize = [
-        'GLOBAL_POSITION_INT', 
-        'ATTITUDE', 
-        'HEARTBEAT', 
-        'STATUSTEXT'
-    ]
-
-    for msg_type in key_messages_to_summarize:
-        # Check if the message type exists in the data and is not empty
-        if msg_type not in data or not data[msg_type]:
-            continue
-
-        message_object = data[msg_type]
-        sample_data = []
-
-        if not isinstance(message_object, dict):
-            continue
-
-        try:
-            # Get the column/field names for this message type
-            inner_keys = list(message_object.keys())
-            if not inner_keys:
-                continue
-
-            # Find the number of data points (rows) from the length of the first column
-            num_messages = len(message_object[inner_keys[0]])
-            if num_messages == 0:
-                continue
-
-            # Reconstruct the first 3 "rows" of data from the columns
-            for i in range(min(3, num_messages)):
-                message_instance = {}
-                for key in inner_keys:
-                    # Defensively check if the column has this index
-                    if i < len(message_object[key]):
-                        message_instance[key] = message_object[key][i]
+        num_messages = len(column_data[all_fields[0]])
+        print(f"DEBUG: Number of messages: {num_messages}")
+        if num_messages == 0: return summary + "[Message type is empty]"
+        
+        for i in range(min(5, num_messages)):
+            message_instance = {}
+            for key in fields_to_summarize:
+                if i < len(column_data[key]):
+                    value = column_data[key][i]
+                    if isinstance(value, list):
+                        message_instance[key] = value[0] 
                     else:
-                        message_instance[key] = None  # Use None if data is missing
-                sample_data.append(message_instance)
+                        message_instance[key] = value
+            sample_data.append(message_instance)
+            
+        if sample_data:
+            summary += f"Fields: {', '.join(fields_to_summarize)}\n"
+            summary += json.dumps(sample_data, indent=2)
 
-            # Add the summary to the output string if we have sample data
-            if sample_data:
-                summary += f"- {msg_type}:\n{json.dumps(sample_data, indent=2)}\n"
-
-        except (IndexError, KeyError, TypeError) as e:
-            print(f"DEBUG: Could not process columnar data for {msg_type}: {e}")
-            summary += f"- {msg_type}: [Error processing sample data]\n"
+    except Exception as e:
+        print(f"DEBUG: Error processing data for {column_name}: {e}")
+        summary += f"[Error processing sample data for {column_name}]"
     
     return summary
 
-def generate_prompt(telemetry_data, history, log_type):
-    """
-    Creates a detailed, agentic prompt for the LLM.
-    """
-    telemetry_summary = get_telemetry_summary(telemetry_data)
-    
-    # # Save telemetry_summary to a file (out_actual.txt)
-    # with open('out_actual.txt', 'w') as f:
-    #     f.write(telemetry_summary)
-    # print("Saved telemetry_summary to out_actual.txt")
-
-    # Tell it to fix the get_telemetry_summary function to correctly capture the output
-
-    # Build conversation history for context
+def create_final_answer_prompt(user_question, history, log_type, data_summary):
     chat_history_text = ""
     for message in history:
         role = "User" if message['role'] == 'user' else "You"
         chat_history_text += f"{role}: {message['text']}\n"
 
-    # Main prompt (System Message)
     prompt = f"""
-    You are an expert UAV flight analyst. Your role is to analyze telemetry data 
-    from a .{log_type} log file and answer user questions.
+    You are an expert UAV flight analyst. Your role is to analyze a specific slice of telemetry data from a .{log_type} log file and answer the user's question.
 
     Your Task:
 
-    1. Analyze the provided telemetry data summary and the user's question.
+    1. Analyze the provided targeted telemetry data summary and the user's question.
     2. Refer to the official ArduPilot log documentation when needed: https://ardupilot.org/plane/docs/logmessages.html
-    3. Answer based only on the data provided. If the data is insufficient, say so.
+    3. Answer based only on the data provided. If the data is insufficient, state that clearly. For calculations like "highest" or "average", use the entire dataset implied by the summary.
     4. Behave agentically: maintain conversation context and ask for clarification if the user's query is ambiguous.
     5. For high-level questions about "anomalies," look for patterns like:
         - Sudden drops in altitude (ATT.Alt).
@@ -131,45 +103,58 @@ def generate_prompt(telemetry_data, history, log_type):
         - Loss of GPS satellites (GPS.NSats < 5).
         - Critical error messages (ERR).
         - Uncommanded flight mode changes (MODE).
-    6. Telemetry Data Summary:
-        {telemetry_summary}
+    6. Targeted Telemetry Data Summary:
+        {data_summary}
     7. Conversation History:
         {chat_history_text}
     8. User's new question is next. Analyze the data and history to provide a helpful, data-driven answer.
     """
-
     return prompt
+
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
     if not model:
         return jsonify({"error": "LLM model is not configured. Check your API key."}), 500
     
     data = request.json
-    telemetry_data = data.get('telemetryData', {})
-    history = data.get('history', [])
     user_question = data.get('question', '')
-    log_type = data.get('logType', 'log') # Extract logType
+    history = data.get('history', [])
+    telemetry_data = data.get('telemetryData', {})
+    log_type = data.get('logType', 'log')
 
-    if not user_question:
-        return jsonify({"error": "No question provided"}), 400
-    if not telemetry_data:
-        # This check is now more of a fallback, as the UI prevents this.
-        return jsonify({"reply": "I can't answer questions without telemetry data. Please upload a log file first."})
-
-    # Generate the full prompt including persona, data, history, and log type
-    prompt = generate_prompt(telemetry_data, history, log_type)
-    
-    # Create a chat session with history
-    chat = model.start_chat(history=[]) # We are manually formatting history in the prompt for more control
+    if not all([user_question, telemetry_data]):
+        return jsonify({"error": "Missing question or telemetry data."}), 400
 
     try:
-        # The final content sent to the model is the prompt + the new question
-        full_content = prompt + f"User: {user_question}"
-        response = chat.send_message(full_content)
-        return jsonify({"reply": response.text})
+        # --- STEP 1: IDENTIFY THE RELEVANT COLUMN ---
+        column_selection_prompt = create_column_selection_prompt(user_question, telemetry_data)
+        response = model.generate_content(column_selection_prompt)
+        
+        # Clean the response to get a valid key that might have an instance number
+        selected_column = response.text.strip()
+        print(f"--- LLM selected column: '{selected_column}' ---")
+
+        if selected_column not in telemetry_data:
+            print(f"Error: LLM returned an invalid column name: '{selected_column}'. Falling back.")
+            reply = "I'm sorry, I couldn't identify the right data to answer your question. Could you please rephrase it?"
+            return jsonify({"reply": reply})
+
+        # --- STEP 2: RETRIEVE AND SUMMARIZE DATA FOR THE SELECTED COLUMN ---
+        relevant_data = telemetry_data.get(selected_column)
+        
+        # --- STEP 3: GENERATE THE FINAL ANSWER USING THE TARGETED DATA ---
+        final_prompt = create_final_answer_prompt(user_question, history, log_type, relevant_data)
+        
+        chat = model.start_chat(history=[])
+        full_content = final_prompt + f"\nUser: {user_question}"
+        final_response = chat.send_message(full_content)
+        
+        print(f"--- LLM Final Reply: '{final_response.text}' ---\n")
+        return jsonify({"reply": final_response.text})
+
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return jsonify({"error": "Failed to get a response from the AI model."}), 500
+        print(f"An error occurred in the chat handler: {e}")
+        return jsonify({"error": "An unexpected error occurred while processing your request."}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

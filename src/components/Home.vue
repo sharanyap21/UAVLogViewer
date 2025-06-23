@@ -1,4 +1,3 @@
-<!-- home.vue -->
 <template>
     <div class="home-wrapper">
         <div id='vuewrapper'>
@@ -93,8 +92,9 @@ import arenaLogo from '@/assets/arena_logo.png'
 export default {
     name: 'Home',
     created () {
-        this.$eventHub.$on('messagesDoneLoading', this.extractFlightData)
+        this.$eventHub.$on('messagesDoneLoading', this.prepareAndExtractData)
         this.state.messages = {}
+        this.state.rawMessages = {} // Initialize our new raw data store for the chatbot
         this.state.timeAttitude = []
         this.state.timeAttitudeQ = []
         this.state.currentTrajectory = []
@@ -102,6 +102,7 @@ export default {
     },
     beforeDestroy () {
         this.$eventHub.$off('messages')
+        this.$eventHub.$off('messagesDoneLoading')
     },
     data () {
         return {
@@ -112,6 +113,15 @@ export default {
         }
     },
     methods: {
+        prepareAndExtractData () {
+            // Create a deep copy of the raw messages before they are processed for visualization.
+            // This is the pristine data the chatbot will use.
+            this.state.rawMessages = JSON.parse(JSON.stringify(this.state.messages))
+            console.log('Saved raw messages for chatbot:', Object.keys(this.state.rawMessages))
+
+            // Now, proceed with the original data extraction for visualization.
+            this.extractFlightData()
+        },
         extractFlightData () {
             if (this.dataExtractor === null) {
                 if (this.state.logType === 'tlog') {
@@ -218,9 +228,10 @@ export default {
                 console.log('unable to load named floats')
                 console.log(error)
             }
-            Vue.delete(this.state.messages, 'AHR2')
-            Vue.delete(this.state.messages, 'POS')
-            Vue.delete(this.state.messages, 'GPS')
+            // Do not delete data that the chatbot needs for context.
+            // Vue.delete(this.state.messages, 'AHR2')
+            // Vue.delete(this.state.messages, 'POS')
+            // Vue.delete(this.state.messages, 'GPS')
 
             this.state.fences = this.dataExtractor.extractFences(this.state.messages)
 
@@ -289,7 +300,6 @@ export default {
 }
 </script>
 
-<!-- Styles are unchanged -->
 <style scoped>
     .nav-side-menu ul :not(collapsed) .arrow:before,
     .nav-side-menu li :not(collapsed) .arrow:before {
