@@ -31,21 +31,21 @@ def create_column_selection_prompt(user_question, telemetry_data):
             schema += f"- {key}: {fields}\n"
 
     prompt = f"""
-    You are an expert data routing tool for flight telemetry logs. Your task is to identify the **absolute minimum** set of telemetry message types required to answer a user's question.
+    You are an expert data routing tool for flight telemetry logs. Your task is to identify at most 3 telemetry message types required to answer a user's question.
 
     Instructions:
     1. Analyze the user's question and the provided schema.
     2. Select the single most relevant message type if possible.
     3. Only select multiple message types if it is **strictly necessary** to correlate information to answer the question (e.g., questions about "anomalies" which require checking BAT, GPS, ERR, and MODE).
     4. Be as conservative as possible. Do not include extra message types "just in case."
-    5. Unless the user's question is about the attitude of the vehicle, do not select ATT.
+    5. Unless the user's question is about the attitude of the vehicle, **do not** select ATT.
 
     Schema of Available Message Types and Fields:
     {schema}
 
     User Question: "{user_question}"
 
-    Return a comma-separated list of the exact message type name(s) from the schema (e.g., GLOBAL_POSITION_INT or ATT,BAT,GPS,ERR,MODE). Do not add any explanation or extra text.
+    Return a comma-separated list of the exact message type name(s) from the schema (e.g., GLOBAL_POSITION_INT or BAT,GPS,ERR,MODE). Do not add any explanation or extra text.
     """
     return prompt
 
@@ -125,6 +125,7 @@ def chat_handler():
         response = model.generate_content(column_selection_prompt)
         selected_columns_str = response.text.strip()
         selected_columns = [col.strip() for col in selected_columns_str.split(',') if col.strip()]
+        print(f"Selected columns: {selected_columns}")
 
         # 2. Check if the selected columns are in the telemetry data
         valid_selected_columns = [col for col in selected_columns if col in telemetry_data]
